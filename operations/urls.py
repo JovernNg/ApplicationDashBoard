@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import views
 
+
 urlpatterns = [
 
     path(
@@ -38,5 +39,11 @@ urlpatterns = [
         "applications/<int:pk>/edit/",
         views.application_edit,
         name="application_edit",
+    ),
+
+    path(
+        "audit/",
+        views.audit_log_list,
+        name="audit_log_list",
     ),
 ]

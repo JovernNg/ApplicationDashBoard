@@ -1,6 +1,7 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-
+from django.contrib.auth.decorators import (
+    login_required,
+)
 from django.shortcuts import (
     get_object_or_404,
     redirect,
@@ -8,36 +9,35 @@ from django.shortcuts import (
 )
 
 from .forms import ApplicationForm
-from .models import Application
+from .models import (
+    Application,
+    AuditLog,
+)
+
+from .services.audit import log_action
 
 from .services.permissions import (
     administrator_required,
     is_administrator,
 )
 
+
 @login_required
 def dashboard(request):
-    """
-    Main operations dashboard.
-
-    The dashboard is deliberately empty for Milestone 1.
-    KPI calculations will be added in a later milestone.
-    """
 
     return render(
         request,
         "operations/dashboard.html",
+        {
+            "is_admin": is_administrator(
+                request.user
+            ),
+        },
     )
 
 
 @administrator_required
 def administrator_test(request):
-    """
-    Temporary page for verifying role-based access.
-
-    This can later be replaced by the actual
-    application-management page.
-    """
 
     return render(
         request,
@@ -65,12 +65,18 @@ def application_list(request):
 
 
 @login_required
-def application_list(request):
+def application_detail(
+    request,
+    pk,
+):
 
-    applications = Application.objects.all()
+    application = get_object_or_404(
+        Application,
+        pk=pk,
+    )
 
     context = {
-        "applications": applications,
+        "application": application,
         "is_admin": is_administrator(
             request.user
         ),
@@ -78,7 +84,7 @@ def application_list(request):
 
     return render(
         request,
-        "operations/application_list.html",
+        "operations/application_detail.html",
         context,
     )
 
@@ -96,6 +102,22 @@ def application_create(request):
 
             application = form.save()
 
+            log_action(
+                user=request.user,
+                action=(
+                    AuditLog.Action
+                    .APPLICATION_CREATED
+                ),
+                application=application,
+                details=(
+                    f"Application "
+                    f"'{application.name}' "
+                    f"was registered with "
+                    f"status "
+                    f"{application.get_status_display()}."
+                ),
+            )
+
             messages.success(
                 request,
                 (
@@ -105,8 +127,7 @@ def application_create(request):
             )
 
             return redirect(
-                "application_detail",
-                pk=application.pk,
+                "application_list"
             )
 
     else:
@@ -135,6 +156,8 @@ def application_edit(
         pk=pk,
     )
 
+    original_status = application.status
+
     if request.method == "POST":
 
         form = ApplicationForm(
@@ -144,7 +167,83 @@ def application_edit(
 
         if form.is_valid():
 
+            changed_fields = list(
+                form.changed_data
+            )
+
             application = form.save()
+
+            if "status" in changed_fields:
+
+                old_status_label = dict(
+                    Application.Status.choices
+                ).get(
+                    original_status,
+                    original_status,
+                )
+
+                new_status_label = (
+                    application
+                    .get_status_display()
+                )
+
+                log_action(
+                    user=request.user,
+                    action=(
+                        AuditLog.Action
+                        .APPLICATION_STATUS_CHANGED
+                    ),
+                    application=application,
+                    details=(
+                        f"Application status "
+                        f"changed from "
+                        f"{old_status_label} "
+                        f"to "
+                        f"{new_status_label}."
+                    ),
+                )
+
+            other_fields = [
+                field
+                for field in changed_fields
+                if field != "status"
+            ]
+
+            if other_fields:
+
+                field_labels = []
+
+                for field_name in other_fields:
+
+                    field = form.fields.get(
+                        field_name
+                    )
+
+                    if field:
+                        field_labels.append(
+                            field.label
+                            or field_name
+                        )
+                    else:
+                        field_labels.append(
+                            field_name
+                        )
+
+                log_action(
+                    user=request.user,
+                    action=(
+                        AuditLog.Action
+                        .APPLICATION_UPDATED
+                    ),
+                    application=application,
+                    details=(
+                        "Updated fields: "
+                        + ", ".join(
+                            field_labels
+                        )
+                        + "."
+                    ),
+                )
 
             messages.success(
                 request,
@@ -177,23 +276,23 @@ def application_edit(
         },
     )
 
-@login_required
-def application_detail(request, pk):
 
-    application = get_object_or_404(
-        Application,
-        pk=pk,
+@administrator_required
+def audit_log_list(request):
+
+    audit_logs = (
+        AuditLog.objects
+        .select_related(
+            "user",
+            "application",
+        )
+        .all()
     )
-
-    context = {
-        "application": application,
-        "is_admin": is_administrator(
-            request.user
-        ),
-    }
 
     return render(
         request,
-        "operations/application_detail.html",
-        context,
+        "operations/audit_log_list.html",
+        {
+            "audit_logs": audit_logs,
+        },
     )

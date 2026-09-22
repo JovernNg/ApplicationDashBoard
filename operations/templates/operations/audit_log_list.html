@@ -1,0 +1,143 @@
+{% extends "operations/base.html" %}
+
+
+{% block title %}
+Audit Log
+{% endblock %}
+
+
+{% block content %}
+
+<div class="mb-4">
+
+    <h1>
+        Audit Log
+    </h1>
+
+    <p class="text-secondary">
+        Recorded application management
+        activity.
+    </p>
+
+</div>
+
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table
+                class="table table-hover
+                       align-middle"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Date / Time
+                        </th>
+
+                        <th>
+                            User
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
+
+                        <th>
+                            Application
+                        </th>
+
+                        <th>
+                            Details
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for log in audit_logs %}
+
+                    <tr>
+
+                        <td>
+                            {{ log.created_at|date:"d M Y H:i:s" }}
+                        </td>
+
+                        <td>
+
+                            {% if log.user %}
+
+                                {{ log.user.username }}
+
+                            {% else %}
+
+                                System
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ log.get_action_display }}
+                        </td>
+
+                        <td>
+
+                            {% if log.application %}
+
+                                <a
+                                    href="{% url 'application_detail' log.application.pk %}"
+                                >
+                                    {{ log.application.name }}
+                                </a>
+
+                            {% else %}
+
+                                -
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ log.details }}
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="5"
+                            class="text-center text-secondary"
+                        >
+                            No audit records
+                            have been created.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

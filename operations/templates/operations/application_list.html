@@ -29,12 +29,23 @@ Applications
 
     {% if is_admin %}
 
-    <a
-        href="{% url 'application_create' %}"
-        class="btn btn-primary"
-    >
-        Register Application
-    </a>
+    <div>
+
+        <a
+            href="{% url 'audit_log_list' %}"
+            class="btn btn-outline-secondary me-2"
+        >
+            Audit Log
+        </a>
+
+        <a
+            href="{% url 'application_create' %}"
+            class="btn btn-primary"
+        >
+            Register Application
+        </a>
+
+    </div>
 
     {% endif %}
 
