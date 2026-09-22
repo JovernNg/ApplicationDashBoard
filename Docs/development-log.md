@@ -289,3 +289,167 @@ Milestone 3 was completed successfully.
 The system now provides an audit trail that records important application management actions, including application creation, application updates, application status changes, the user responsible for the action, the application affected by the action, a description of the activity and the timestamp of the activity.
 Administrators can review audit records through a dedicated audit log page, while Operations Users are prevented from accessing the audit trail.
 The audit logging structure can now be extended in later milestones to record incident creation, incident assignment, workflow transitions, resolution activities and other operational actions.
+
+### Milestone 4 - Incident Management
+
+Date: 22 September 2026
+Status: Completed
+
+### Objective
+
+The objective of this milestone was to implement the incident management functionality of the system.
+The incident management module allows authenticated users to report operational incidents against registered applications. Each incident records the affected application, title, description, priority, status, reporting user and relevant timestamps.
+This milestone also introduced automatic incident numbering and extended the audit trail so that incident creation is recorded.
+
+### Work Completed
+
+Created the Incident database model.
+Added incident fields for incident number, affected application, title, description, priority, status, reporting user, assigned user, reporting timestamp, last updated timestamp, resolution timestamp, closure timestamp and resolution notes.
+Created the following incident priority levels:
+Critical
+High
+Medium
+Low
+Created the following incident status values:
+New
+Assigned
+In Progress
+Resolved
+Closed
+Configured newly created incidents to automatically start with the New status.
+Created automatic incident number generation using the format:
+INC-YYYYMMDD-XXXX
+The final number is based on the incident database identifier.
+Created and applied the database migration for the Incident model.
+Configured incidents to reference registered applications.
+Configured the application relationship using PROTECT behaviour so that an application with related incidents cannot be accidentally removed while incidents still depend on it.
+Created an IncidentCreateForm using Django's ModelForm.
+Restricted the incident creation form to the fields required when reporting a new incident.
+The creation form includes:
+Application
+Title
+Description
+Priority
+Status, assignment, resolution information and closure information are not directly entered during incident creation.
+Created an incident list page.
+Created an incident detail page.
+Created an incident reporting page.
+Added Incidents to the main navigation bar.
+Added Bootstrap styling to the incident pages.
+Added priority badges to make incident severity easier to identify visually.
+Allowed both Administrator and Operations User accounts to report incidents.
+Restricted incident functionality to authenticated users.
+Automatically recorded the currently logged-in user as the reporting user.
+Extended the audit logging service so that audit records can reference incidents.
+Added an Incident Created audit action.
+Integrated audit logging into incident creation.
+Updated the audit log page so that incident-related audit records can display the associated incident number.
+Registered the Incident model with Django Admin for development and inspection purposes.
+Added automated tests for incident creation, access, numbering, default status and audit logging.
+
+### Design Decisions
+
+Incidents are linked to applications using a database relationship rather than storing the application name directly within the incident.
+This ensures that every incident references an existing application record and avoids duplicating application information.
+The Application relationship uses PROTECT behaviour.
+This prevents an application from being deleted while incidents still reference it, helping to preserve incident history and referential integrity.
+Incident numbers are generated automatically by the system instead of being entered manually by users.
+The incident number uses the format:
+INC-YYYYMMDD-XXXX
+This provides a readable identifier containing the incident date and a unique numeric component.
+New incidents automatically receive the New status.
+Users cannot choose the incident status during the reporting process.
+This was done because incident status changes will be controlled by the workflow logic introduced in the next milestone.
+The incident creation form also does not allow the user to manually enter an assigned user, resolved timestamp, closure timestamp or resolution notes.
+These fields are reserved for later stages of the controlled incident workflow.
+Both Administrator and Operations User accounts are allowed to report incidents.
+This reflects the intended operational use of the system, where operational staff should be able to record incidents without requiring an Administrator to create each record.
+
+### Testing Performed
+
+The following incident management behaviours were tested:
+An Administrator can report a new incident.
+An Operations User can report a new incident.
+A logged-out user cannot access the incident reporting page.
+A newly created incident is linked to the selected application.
+The user who reported the incident is recorded.
+A unique incident number is generated automatically.
+The generated incident number begins with INC-.
+The incident number includes a date component.
+The incident number includes the incident database identifier.
+New incidents automatically receive the New status.
+Authenticated users can view the incident register.
+Authenticated users can view incident details.
+Incident information is displayed with the associated application.
+Incident priority values are restricted to Critical, High, Medium and Low.
+Incident status values are restricted to New, Assigned, In Progress, Resolved and Closed.
+Creating an incident generates an Incident Created audit record.
+The audit record contains the user who reported the incident.
+The audit record references the affected application.
+The audit record references the created incident.
+The automated incident test suite was executed using:
+python manage.py test operations.tests.test_incidents -v 2
+The complete project test suite was executed using:
+python manage.py test
+The tests completed successfully with an OK result.
+Automatic Incident Numbering
+When an incident is first saved, the database assigns it a unique primary key.
+The system then creates an incident number using the reporting date and the primary key.
+An example incident number is:
+INC-20260922-0001
+A later incident could receive:
+INC-20260922-0002
+This means users do not have to manually create or maintain incident identifiers.
+Incident Creation Behaviour
+When an authenticated user reports an incident, the system performs the following process:
+The submitted incident form is validated.
+The currently logged-in user is assigned as the reporting user.
+The incident status is automatically set to New.
+The incident is stored in the database.
+A unique incident number is generated.
+An Incident Created audit record is created.
+A success message is displayed.
+The user is redirected to the incident detail page.
+Audit Trail Integration
+The existing audit trail was extended so that an audit record can reference both an application and an incident.
+When an incident is created, an audit record is generated with the Incident Created action.
+The audit details include the generated incident number and the selected priority.
+For example:
+Incident INC-20260922-0001 was reported with Critical priority.
+The audit log records the reporting user, affected application, incident, action details and timestamp.
+Security and Access Control
+Incident reporting requires an authenticated user session.
+Logged-out users are redirected to the login page.
+Both Administrator and Operations User accounts are permitted to report incidents.
+Users cannot manually enter an incident number.
+Users cannot manually select the initial incident status.
+Users cannot manually set resolution or closure timestamps during creation.
+Users cannot enter resolution notes during initial incident creation.
+These restrictions reduce the ability to bypass the intended incident workflow.
+Further restrictions on incident assignment and status transitions will be introduced in the controlled workflow milestone.
+
+### Problems Encountered
+
+No major implementation problems were encountered during this milestone.
+Care was required when extending the existing AuditLog model because audit records previously referenced only applications.
+The audit model and logging service were updated so that incident records could also be referenced without affecting the existing application audit functionality.
+The incident creation form was deliberately kept separate from the later workflow fields to prevent users from bypassing the intended incident lifecycle.
+
+### Outcome
+
+Milestone 4 was completed successfully.
+The system now provides a functional incident register with:
+Application-linked incidents
+Automatically generated incident numbers
+Incident titles and descriptions
+Priority classification
+Default New status
+Reporting user tracking
+Incident list and detail pages
+Incident reporting by authenticated users
+Audit logging for incident creation
+Automated incident tests
+The incident management functionality now provides the foundation required for the controlled workflow in the next milestone.
+The next stage will implement the permitted incident lifecycle:
+New → Assigned → In Progress → Resolved → Closed
+Milestone 5 will also enforce valid transitions, assignment requirements and resolution requirements rather than allowing incident states to be changed freely.
