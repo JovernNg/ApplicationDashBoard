@@ -453,3 +453,170 @@ The incident management functionality now provides the foundation required for t
 The next stage will implement the permitted incident lifecycle:
 New → Assigned → In Progress → Resolved → Closed
 Milestone 5 will also enforce valid transitions, assignment requirements and resolution requirements rather than allowing incident states to be changed freely.
+
+### Milestone 5 - Controlled Incident Workflow
+Date: 23 September 2026
+Status: Completed
+
+### Objective
+
+The objective of this milestone was to implement a controlled incident workflow so that incident status changes follow a defined sequence instead of allowing users to move freely between states.
+The required incident lifecycle is:
+New → Assigned → In Progress → Resolved → Closed
+The workflow also introduces assignment rules, resolution requirements, automatic timestamps and role-based 
+restrictions on who can modify an incident.
+
+### Work Completed
+
+Created a dedicated workflow service in operations/services/workflow.py.
+Defined the valid incident status transitions.
+Configured the allowed workflow as:
+New → Assigned
+Assigned → In Progress
+In Progress → Resolved
+Resolved → Closed
+Closed → No further transition
+Created reusable workflow functions for incident assignment and status transition.
+Added validation to prevent incidents from skipping workflow states.
+Added validation requiring an assigned user before an incident can enter the Assigned state.
+Configured assignment of a New incident to automatically change its status to Assigned.
+Added validation requiring resolution notes before an incident can move to Resolved.
+Configured the system to automatically record the resolved timestamp when an incident is resolved.
+Configured the system to automatically record the closed timestamp when an incident is closed.
+Prevented Resolved and Closed incidents from being reassigned.
+Created incident-level permission logic for workflow actions.
+Configured Administrators to manage any incident.
+Configured Operations Users to manage only incidents assigned to them.
+Created an IncidentAssignmentForm.
+Created an IncidentTransitionForm.
+Restricted the transition form so that users can only select the next permitted workflow state.
+Configured the transition form to display Resolution Notes only when the next valid status is Resolved.
+Created an Administrator-only incident assignment page.
+Created an incident status transition page.
+Updated the incident detail page to display assignment and status update controls.
+Configured the incident detail page to hide workflow controls when the current user does not have permission to perform the action.
+Updated the incident detail page to display:
+Assigned user
+Resolved timestamp
+Resolution notes
+Closed timestamp
+Extended the audit trail with Incident Assigned and Incident Status Changed actions.
+Configured incident assignment to create an audit record.
+Configured incident status transitions to create audit records.
+Added automated workflow tests.
+
+### Design Decisions
+
+A dedicated workflow service was created instead of placing all status logic directly in the Django views.
+This separates the workflow rules from the user interface and makes the rules reusable and easier to test.
+The permitted workflow is intentionally linear:
+New → Assigned → In Progress → Resolved → Closed
+Users cannot skip intermediate states.
+For example, an Assigned incident cannot move directly to Resolved.
+This ensures that incident handling follows the intended operational process.
+The Administrator is responsible for assigning incidents.
+Operations Users cannot assign incidents themselves.
+Once an incident has been assigned, the assigned Operations User can progress the incident through the workflow.
+An Operations User who is not assigned to the incident cannot modify its workflow state.
+This restriction is enforced on the server side and is not based only on whether a button is visible.
+Resolution notes are required before an incident can enter the Resolved state.
+This ensures that a resolution record exists before the incident is considered resolved.
+The resolved and closed timestamps are generated automatically by the system rather than entered manually by users.
+This reduces the possibility of inconsistent or inaccurate workflow timestamps.
+Workflow Behaviour
+A newly reported incident begins in the New state.
+At this stage, the incident has no assigned user.
+An Administrator assigns the incident to a user.
+The assignment automatically changes the incident from:
+New → Assigned
+The assigned Operations User can then change the incident from:
+Assigned → In Progress
+Once investigation and remediation are complete, the assigned user can change the incident from:
+In Progress → Resolved
+Resolution notes must be entered before this transition is accepted.
+When the incident becomes Resolved, the system automatically records the resolved timestamp.
+The final permitted transition is:
+Resolved → Closed
+When this occurs, the system automatically records the closed timestamp.
+A Closed incident has no further permitted transitions.
+Access Control
+Administrators can assign incidents.
+Administrators can manage incident workflow for any incident.
+Operations Users cannot assign incidents.
+Operations Users can modify the workflow only when the incident is assigned to them.
+Operations Users who are not assigned to the incident receive an HTTP 403 response if they attempt to access the transition function directly.
+Logged-out users cannot access workflow functions.
+These controls are enforced through server-side permission checks.
+
+### Testing Performed
+
+The following workflow behaviours were tested:
+An Administrator can assign an incident.
+Assigning a New incident automatically moves it to Assigned.
+The assigned user is stored correctly.
+An Operations User cannot assign an incident.
+The assigned Operations User can move an incident from Assigned to In Progress.
+A different Operations User cannot change the incident status.
+An incident cannot skip directly from Assigned to Resolved.
+An incident cannot skip required workflow stages.
+Resolution notes are required before an incident can be resolved.
+Submitting an empty resolution note is rejected.
+Resolving an incident automatically records the resolved timestamp.
+Resolution notes are stored with the incident.
+A Resolved incident can move to Closed.
+Closing an incident automatically records the closed timestamp.
+A Closed incident cannot move to another status.
+Incident assignment generates an audit record.
+Incident status changes generate audit records.
+The Milestone 5 workflow tests were executed using:
+python manage.py test operations.tests.test_workflow -v 2
+The full project test suite was executed using:
+python manage.py test
+The tests completed successfully with an OK result.
+Audit Trail Integration
+Two additional audit actions were introduced:
+Incident Assigned
+Incident Status Changed
+When an Administrator assigns an incident, the audit trail records the incident, application, user performing the assignment, assigned username, action and timestamp.
+If assignment changes a New incident to Assigned, a separate Incident Status Changed audit entry is also generated.
+Status transitions are also recorded.
+For example:
+Incident status changed from Assigned to In Progress.
+Another example is:
+Incident status changed from In Progress to Resolved.
+This provides a historical record of the incident lifecycle.
+
+### Problems Encountered
+
+During testing of the incident transition functionality, Django returned a TemplateDoesNotExist error for:
+operations/incident_transition_form.html
+The transition view and URL were functioning correctly, but the corresponding template file had not been created in the expected template directory.
+The missing file was created at:
+templates/operations/incident_transition_form.html
+After creating the template, the transition page loaded successfully and workflow testing continued normally.
+
+### Security Considerations
+
+Workflow validation is implemented within the server-side workflow service.
+This means invalid transitions cannot be performed simply by modifying the browser interface or manually submitting a different status value.
+The system checks the current incident state against the defined list of permitted transitions.
+Object-level access control is also applied to workflow changes.
+An Operations User can only manage an incident when the incident is assigned to that user.
+This provides stronger access control than simply hiding management controls from the interface.
+
+### Outcome
+
+Milestone 5 was completed successfully.
+The system now provides a controlled incident lifecycle with:
+Sequential workflow enforcement
+Administrator-controlled assignment
+Assigned-user workflow permissions
+Prevention of invalid status changes
+Mandatory resolution notes
+Automatic resolved timestamps
+Automatic closed timestamps
+Workflow audit logging
+Object-level access restrictions
+Automated workflow tests
+The incident management functionality now enforces business rules rather than allowing unrestricted status changes.
+The next milestone will implement the SLA engine, including priority-based SLA targets, deadline calculation, At Risk thresholds and SLA breach detection.
