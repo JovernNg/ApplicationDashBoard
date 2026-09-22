@@ -214,6 +214,16 @@ class AuditLog(models.Model):
             "Incident Created",
         )
 
+        INCIDENT_ASSIGNED = (
+            "INCIDENT_ASSIGNED",
+            "Incident Assigned",
+        )
+
+        INCIDENT_STATUS_CHANGED = (
+            "INCIDENT_STATUS_CHANGED",
+            "Incident Status Changed",
+        )
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

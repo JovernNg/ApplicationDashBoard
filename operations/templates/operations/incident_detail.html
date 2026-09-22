@@ -1,22 +1,62 @@
 {% extends "operations/base.html" %}
 
-
 {% block title %}
 {{ incident.incident_number }}
 {% endblock %}
 
-
 {% block content %}
 
-<div class="mb-4">
+<div
+    class="d-flex justify-content-between
+           align-items-start mb-4"
+>
 
-    <h1>
-        {{ incident.incident_number }}
-    </h1>
+    <div>
 
-    <p class="text-secondary">
-        {{ incident.title }}
-    </p>
+        <h1>
+            {{ incident.incident_number }}
+        </h1>
+
+        <p class="text-secondary">
+            {{ incident.title }}
+        </p>
+
+    </div>
+
+    <div>
+
+        {% if is_admin %}
+
+            {% if incident.status != "RESOLVED" and incident.status != "CLOSED" %}
+
+            <a
+                href="{% url 'incident_assign' incident.pk %}"
+                class="btn btn-outline-primary"
+            >
+                {% if incident.assigned_user %}
+                    Reassign
+                {% else %}
+                    Assign
+                {% endif %}
+            </a>
+
+            {% endif %}
+
+        {% endif %}
+
+
+        {% if can_transition %}
+
+        <a
+            href="{% url 'incident_transition' incident.pk %}"
+            class="btn btn-primary"
+        >
+            Update Status
+        </a>
+
+        {% endif %}
+
+    </div>
 
 </div>
 
@@ -123,6 +163,45 @@
             <dd class="col-sm-9">
                 {{ incident.reported_at|date:"d M Y H:i:s" }}
             </dd>
+
+
+            {% if incident.resolved_at %}
+
+            <dt class="col-sm-3">
+                Resolved At
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.resolved_at|date:"d M Y H:i:s" }}
+            </dd>
+
+            {% endif %}
+
+
+            {% if incident.resolution_notes %}
+
+            <dt class="col-sm-3">
+                Resolution Notes
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.resolution_notes }}
+            </dd>
+
+            {% endif %}
+
+
+            {% if incident.closed_at %}
+
+            <dt class="col-sm-3">
+                Closed At
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.closed_at|date:"d M Y H:i:s" }}
+            </dd>
+
+            {% endif %}
 
 
             <dt class="col-sm-3">

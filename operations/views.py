@@ -10,8 +10,11 @@ from django.shortcuts import (
 
 from .forms import (
     ApplicationForm,
+    IncidentAssignmentForm,
     IncidentCreateForm,
+    IncidentTransitionForm,
 )
+
 from .models import (
     Application,
     AuditLog,
@@ -22,9 +25,22 @@ from .services.audit import log_action
 
 from .services.permissions import (
     administrator_required,
+    can_manage_incident,
     is_administrator,
 )
 
+from django.core.exceptions import (
+    PermissionDenied,
+    ValidationError,
+)
+
+from .services.workflow import (
+    assign_incident,
+    get_allowed_transitions,
+    transition_incident,
+)
+
+from django.db import transaction
 
 @login_required
 def dashboard(request):
@@ -337,12 +353,45 @@ def incident_detail(
         pk=pk,
     )
 
+    is_admin = is_administrator(
+        request.user
+    )
+
+    can_manage = can_manage_incident(
+        request.user,
+        incident,
+    )
+
+    allowed_transitions = (
+        get_allowed_transitions(
+            incident
+        )
+    )
+
+    can_transition = (
+        can_manage
+        and incident.status
+        not in [
+            Incident.Status.NEW,
+            Incident.Status.CLOSED,
+        ]
+        and bool(
+            allowed_transitions
+        )
+    )
+
+    context = {
+        "incident": incident,
+        "is_admin": is_admin,
+        "can_manage": can_manage,
+        "can_transition":
+            can_transition,
+    }
+
     return render(
         request,
         "operations/incident_detail.html",
-        {
-            "incident": incident,
-        },
+        context,
     )
 
 @login_required
@@ -414,5 +463,293 @@ def incident_create(request):
             "form": form,
             "page_title":
                 "Report Incident",
+        },
+    )
+
+@administrator_required
+def incident_assign(
+    request,
+    pk,
+):
+
+    incident = get_object_or_404(
+        Incident,
+        pk=pk,
+    )
+
+    if incident.status in [
+        Incident.Status.RESOLVED,
+        Incident.Status.CLOSED,
+    ]:
+
+        messages.error(
+            request,
+            (
+                "Resolved or closed "
+                "incidents cannot "
+                "be reassigned."
+            ),
+        )
+
+        return redirect(
+            "incident_detail",
+            pk=incident.pk,
+        )
+
+    if request.method == "POST":
+
+        form = IncidentAssignmentForm(
+            request.POST,
+            instance=incident,
+        )
+
+        if form.is_valid():
+
+            assigned_user = (
+                form.cleaned_data[
+                    "assigned_user"
+                ]
+            )
+
+            old_status = (
+                incident.status
+            )
+
+            with transaction.atomic():
+
+                assign_incident(
+                    incident,
+                    assigned_user,
+                )
+
+                log_action(
+                    user=request.user,
+                    action=(
+                        AuditLog.Action
+                        .INCIDENT_ASSIGNED
+                    ),
+                    application=(
+                        incident.application
+                    ),
+                    incident=incident,
+                    details=(
+                        f"Incident "
+                        f"{incident.incident_number} "
+                        f"was assigned to "
+                        f"{assigned_user.username}."
+                    ),
+                )
+
+                if (
+                    old_status
+                    != incident.status
+                ):
+
+                    old_label = dict(
+                        Incident.Status.choices
+                    )[old_status]
+
+                    new_label = (
+                        incident
+                        .get_status_display()
+                    )
+
+                    log_action(
+                        user=request.user,
+                        action=(
+                            AuditLog.Action
+                            .INCIDENT_STATUS_CHANGED
+                        ),
+                        application=(
+                            incident.application
+                        ),
+                        incident=incident,
+                        details=(
+                            f"Incident status "
+                            f"changed from "
+                            f"{old_label} "
+                            f"to {new_label}."
+                        ),
+                    )
+
+            messages.success(
+                request,
+                (
+                    f"Incident "
+                    f"{incident.incident_number} "
+                    f"was assigned to "
+                    f"{assigned_user.username}."
+                ),
+            )
+
+            return redirect(
+                "incident_detail",
+                pk=incident.pk,
+            )
+
+    else:
+
+        form = IncidentAssignmentForm(
+            instance=incident
+        )
+
+    return render(
+        request,
+        "operations/incident_assignment_form.html",
+        {
+            "form": form,
+            "incident": incident,
+        },
+    )
+
+@login_required
+def incident_transition(
+    request,
+    pk,
+):
+
+    incident = get_object_or_404(
+        Incident,
+        pk=pk,
+    )
+
+    if not can_manage_incident(
+        request.user,
+        incident,
+    ):
+
+        raise PermissionDenied
+
+    if (
+        incident.status
+        == Incident.Status.NEW
+    ):
+
+        messages.error(
+            request,
+            (
+                "The incident must be "
+                "assigned before its "
+                "status can be changed."
+            ),
+        )
+
+        return redirect(
+            "incident_detail",
+            pk=incident.pk,
+        )
+
+    if (
+        incident.status
+        == Incident.Status.CLOSED
+    ):
+
+        messages.info(
+            request,
+            "This incident is already closed.",
+        )
+
+        return redirect(
+            "incident_detail",
+            pk=incident.pk,
+        )
+
+    if request.method == "POST":
+
+        form = IncidentTransitionForm(
+            request.POST,
+            incident=incident,
+        )
+
+        if form.is_valid():
+
+            new_status = (
+                form.cleaned_data[
+                    "new_status"
+                ]
+            )
+
+            resolution_notes = (
+                form.cleaned_data.get(
+                    "resolution_notes",
+                    "",
+                )
+            )
+
+            old_status = incident.status
+
+            old_label = dict(
+                Incident.Status.choices
+            )[old_status]
+
+            try:
+
+                with transaction.atomic():
+
+                    transition_incident(
+                        incident,
+                        new_status,
+                        resolution_notes,
+                    )
+
+                    new_label = (
+                        incident
+                        .get_status_display()
+                    )
+
+                    log_action(
+                        user=request.user,
+                        action=(
+                            AuditLog.Action
+                            .INCIDENT_STATUS_CHANGED
+                        ),
+                        application=(
+                            incident.application
+                        ),
+                        incident=incident,
+                        details=(
+                            f"Incident status "
+                            f"changed from "
+                            f"{old_label} "
+                            f"to {new_label}."
+                        ),
+                    )
+
+            except ValidationError as error:
+
+                form.add_error(
+                    None,
+                    error.message,
+                )
+
+            else:
+
+                messages.success(
+                    request,
+                    (
+                        f"Incident "
+                        f"{incident.incident_number} "
+                        f"is now "
+                        f"{incident.get_status_display()}."
+                    ),
+                )
+
+                return redirect(
+                    "incident_detail",
+                    pk=incident.pk,
+                )
+
+    else:
+
+        form = IncidentTransitionForm(
+            incident=incident
+        )
+
+    return render(
+        request,
+        "operations/incident_transition_form.html",
+        {
+            "form": form,
+            "incident": incident,
         },
     )

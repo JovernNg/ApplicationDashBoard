@@ -64,4 +64,16 @@ path(
     views.incident_detail,
     name="incident_detail",
 ),
+
+path(
+    "incidents/<int:pk>/assign/",
+    views.incident_assign,
+    name="incident_assign",
+),
+
+path(
+    "incidents/<int:pk>/transition/",
+    views.incident_transition,
+    name="incident_transition",
+),
 ]

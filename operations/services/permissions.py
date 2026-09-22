@@ -70,3 +70,23 @@ def administrator_required(view_func):
         )
 
     return wrapper
+
+def can_manage_incident(
+    user,
+    incident,
+):
+
+    if not user.is_authenticated:
+        return False
+
+    if is_administrator(user):
+        return True
+
+    if is_operations_user(user):
+
+        return (
+            incident.assigned_user_id
+            == user.id
+        )
+
+    return False
