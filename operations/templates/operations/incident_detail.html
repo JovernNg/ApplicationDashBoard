@@ -1,0 +1,150 @@
+{% extends "operations/base.html" %}
+
+
+{% block title %}
+{{ incident.incident_number }}
+{% endblock %}
+
+
+{% block content %}
+
+<div class="mb-4">
+
+    <h1>
+        {{ incident.incident_number }}
+    </h1>
+
+    <p class="text-secondary">
+        {{ incident.title }}
+    </p>
+
+</div>
+
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <dl class="row">
+
+            <dt class="col-sm-3">
+                Application
+            </dt>
+
+            <dd class="col-sm-9">
+
+                <a
+                    href="{% url 'application_detail' incident.application.pk %}"
+                >
+                    {{ incident.application.name }}
+                </a>
+
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Title
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.title }}
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Description
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.description }}
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Priority
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.get_priority_display }}
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Status
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.get_status_display }}
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Reported By
+            </dt>
+
+            <dd class="col-sm-9">
+
+                {% if incident.reported_by %}
+
+                    {{ incident.reported_by.username }}
+
+                {% else %}
+
+                    Unknown
+
+                {% endif %}
+
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Assigned User
+            </dt>
+
+            <dd class="col-sm-9">
+
+                {% if incident.assigned_user %}
+
+                    {{ incident.assigned_user.username }}
+
+                {% else %}
+
+                    Not assigned
+
+                {% endif %}
+
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Reported At
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.reported_at|date:"d M Y H:i:s" }}
+            </dd>
+
+
+            <dt class="col-sm-3">
+                Last Updated
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ incident.updated_at|date:"d M Y H:i:s" }}
+            </dd>
+
+        </dl>
+
+    </div>
+
+</div>
+
+
+<a
+    href="{% url 'incident_list' %}"
+    class="btn btn-outline-secondary mt-3"
+>
+    Back to Incidents
+</a>
+
+{% endblock %}

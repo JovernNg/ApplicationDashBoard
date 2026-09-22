@@ -46,4 +46,22 @@ urlpatterns = [
         views.audit_log_list,
         name="audit_log_list",
     ),
+
+    path(
+    "incidents/",
+    views.incident_list,
+    name="incident_list",
+),
+
+path(
+    "incidents/new/",
+    views.incident_create,
+    name="incident_create",
+),
+
+path(
+    "incidents/<int:pk>/",
+    views.incident_detail,
+    name="incident_detail",
+),
 ]

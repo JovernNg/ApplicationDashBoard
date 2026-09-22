@@ -54,6 +54,10 @@ Audit Log
                         </th>
 
                         <th>
+                            Incident
+                        </th>
+
+                        <th>
                             Details
                         </th>
 
@@ -109,6 +113,24 @@ Audit Log
                         </td>
 
                         <td>
+
+                            {% if log.incident %}
+
+                                <a
+                                    href="{% url 'incident_detail' log.incident.pk %}"
+                                >
+                                    {{ log.incident.incident_number }}
+                                </a>
+
+                            {% else %}
+
+                                -
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
                             {{ log.details }}
                         </td>
 
@@ -119,7 +141,7 @@ Audit Log
                     <tr>
 
                         <td
-                            colspan="5"
+                            colspan="6"
                             class="text-center text-secondary"
                         >
                             No audit records

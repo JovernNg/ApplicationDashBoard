@@ -66,9 +66,134 @@ class Application(models.Model):
         return self.name
 
 
+class Incident(models.Model):
+
+    class Priority(models.TextChoices):
+        CRITICAL = "CRITICAL", "Critical"
+        HIGH = "HIGH", "High"
+        MEDIUM = "MEDIUM", "Medium"
+        LOW = "LOW", "Low"
+
+    class Status(models.TextChoices):
+        NEW = "NEW", "New"
+        ASSIGNED = "ASSIGNED", "Assigned"
+        IN_PROGRESS = (
+            "IN_PROGRESS",
+            "In Progress",
+        )
+        RESOLVED = "RESOLVED", "Resolved"
+        CLOSED = "CLOSED", "Closed"
+
+    incident_number = models.CharField(
+        max_length=30,
+        unique=True,
+        blank=True,
+    )
+
+    application = models.ForeignKey(
+        Application,
+        on_delete=models.PROTECT,
+        related_name="incidents",
+    )
+
+    title = models.CharField(
+        max_length=200,
+    )
+
+    description = models.TextField()
+
+    priority = models.CharField(
+        max_length=20,
+        choices=Priority.choices,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NEW,
+    )
+
+    reported_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="reported_incidents",
+    )
+
+    assigned_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_incidents",
+    )
+
+    reported_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    closed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    resolution_notes = models.TextField(
+        blank=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-reported_at",
+            "-id",
+        ]
+
+    def save(self, *args, **kwargs):
+
+        if self.incident_number:
+
+            return super().save(
+                *args,
+                **kwargs,
+            )
+
+        super().save(
+            *args,
+            **kwargs,
+        )
+
+        self.incident_number = (
+            f"INC-"
+            f"{self.reported_at:%Y%m%d}-"
+            f"{self.pk:04d}"
+        )
+
+        super().save(
+            update_fields=[
+                "incident_number",
+            ]
+        )
+
+    def __str__(self):
+
+        return (
+            f"{self.incident_number} - "
+            f"{self.title}"
+        )
+
+
 class AuditLog(models.Model):
 
     class Action(models.TextChoices):
+
         APPLICATION_CREATED = (
             "APPLICATION_CREATED",
             "Application Created",
@@ -84,6 +209,11 @@ class AuditLog(models.Model):
             "Application Status Changed",
         )
 
+        INCIDENT_CREATED = (
+            "INCIDENT_CREATED",
+            "Incident Created",
+        )
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -94,6 +224,14 @@ class AuditLog(models.Model):
 
     application = models.ForeignKey(
         Application,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+
+    incident = models.ForeignKey(
+        Incident,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

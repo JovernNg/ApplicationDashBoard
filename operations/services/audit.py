@@ -6,6 +6,7 @@ def log_action(
     user,
     action,
     application=None,
+    incident=None,
     details="",
 ):
 
@@ -13,5 +14,6 @@ def log_action(
         user=user,
         action=action,
         application=application,
+        incident=incident,
         details=details,
     )

@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import (
     Application,
     AuditLog,
+    Incident,
 )
 
 
@@ -78,3 +79,35 @@ class AuditLogAdmin(admin.ModelAdmin):
         obj=None,
     ):
         return False
+
+    @admin.register(Incident)
+    class IncidentAdmin(admin.ModelAdmin):
+
+        list_display = [
+            "incident_number",
+            "application",
+            "title",
+            "priority",
+            "status",
+            "reported_by",
+            "reported_at",
+        ]
+
+        list_filter = [
+            "priority",
+            "status",
+            "application",
+       ]
+
+        search_fields = [
+            "incident_number",
+            "title",
+            "description",
+            "application__name",
+        ]
+
+        readonly_fields = [
+            "incident_number",
+            "reported_at",
+            "updated_at",
+        ]

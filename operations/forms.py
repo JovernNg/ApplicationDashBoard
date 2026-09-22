@@ -1,6 +1,9 @@
 from django import forms
 
-from .models import Application
+from .models import (
+    Application,
+    Incident,
+)
 
 
 class ApplicationForm(forms.ModelForm):
@@ -67,4 +70,46 @@ class ApplicationForm(forms.ModelForm):
                         "step": "0.01",
                     }
                 ),
+        }
+
+
+class IncidentCreateForm(forms.ModelForm):
+
+    class Meta:
+
+        model = Incident
+
+        fields = [
+            "application",
+            "title",
+            "description",
+            "priority",
+        ]
+
+        widgets = {
+
+            "application": forms.Select(
+                attrs={
+                    "class": "form-select",
+                }
+            ),
+
+            "title": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
+
+            "description": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 5,
+                }
+            ),
+
+            "priority": forms.Select(
+                attrs={
+                    "class": "form-select",
+                }
+            ),
         }

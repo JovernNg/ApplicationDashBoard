@@ -8,10 +8,14 @@ from django.shortcuts import (
     render,
 )
 
-from .forms import ApplicationForm
+from .forms import (
+    ApplicationForm,
+    IncidentCreateForm,
+)
 from .models import (
     Application,
     AuditLog,
+    Incident,
 )
 
 from .services.audit import log_action
@@ -294,5 +298,121 @@ def audit_log_list(request):
         "operations/audit_log_list.html",
         {
             "audit_logs": audit_logs,
+        },
+    )
+
+@login_required
+def incident_list(request):
+
+    incidents = (
+        Incident.objects
+        .select_related(
+            "application",
+            "reported_by",
+            "assigned_user",
+        )
+        .all()
+    )
+
+    return render(
+        request,
+        "operations/incident_list.html",
+        {
+            "incidents": incidents,
+        },
+    )
+
+@login_required
+def incident_detail(
+    request,
+    pk,
+):
+
+    incident = get_object_or_404(
+        Incident.objects.select_related(
+            "application",
+            "reported_by",
+            "assigned_user",
+        ),
+        pk=pk,
+    )
+
+    return render(
+        request,
+        "operations/incident_detail.html",
+        {
+            "incident": incident,
+        },
+    )
+
+@login_required
+def incident_create(request):
+
+    if request.method == "POST":
+
+        form = IncidentCreateForm(
+            request.POST
+        )
+
+        if form.is_valid():
+
+            incident = form.save(
+                commit=False
+            )
+
+            incident.reported_by = (
+                request.user
+            )
+
+            incident.status = (
+                Incident.Status.NEW
+            )
+
+            incident.save()
+
+            log_action(
+                user=request.user,
+                action=(
+                    AuditLog.Action
+                    .INCIDENT_CREATED
+                ),
+                application=(
+                    incident.application
+                ),
+                incident=incident,
+                details=(
+                    f"Incident "
+                    f"{incident.incident_number} "
+                    f"was reported with "
+                    f"{incident.get_priority_display()} "
+                    f"priority."
+                ),
+            )
+
+            messages.success(
+                request,
+                (
+                    f"Incident "
+                    f"{incident.incident_number} "
+                    "was created successfully."
+                ),
+            )
+
+            return redirect(
+                "incident_detail",
+                pk=incident.pk,
+            )
+
+    else:
+
+        form = IncidentCreateForm()
+
+    return render(
+        request,
+        "operations/incident_form.html",
+        {
+            "form": form,
+            "page_title":
+                "Report Incident",
         },
     )
