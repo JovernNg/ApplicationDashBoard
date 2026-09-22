@@ -1,0 +1,30 @@
+{% extends "operations/base.html" %}
+
+
+{% block content %}
+
+<h1>
+    Application Operations Dashboard
+</h1>
+
+<div class="alert alert-success">
+
+    Authentication successful.
+
+    Logged in as:
+
+    <strong>
+        {{ user.username }}
+    </strong>
+
+</div>
+
+
+<a
+    href="{% url 'administrator_test' %}"
+    class="btn btn-outline-primary"
+>
+    Test Administrator Access
+</a>
+
+{% endblock %}
