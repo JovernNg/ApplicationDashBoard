@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -20,67 +19,87 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
-
 </head>
 
-<body>
+<body class="bg-light text-dark">
 
-<nav class="navbar navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 
-    <div class="container">
+        <div class="container">
 
-        <a
-            class="navbar-brand"
-            href="{% url 'dashboard' %}"
-        >
-            Operations Dashboard
-        </a>
-
-
-        {% if user.is_authenticated %}
-
-        <div class="d-flex">
-
-            <span class="text-light me-3">
-                {{ user.username }}
-            </span>
-
-            <form
-                method="post"
-                action="{% url 'logout' %}"
+            <a
+                class="navbar-brand"
+                href="{% url 'dashboard' %}"
             >
+                Operations Dashboard
+            </a>
 
-                {% csrf_token %}
+            {% if user.is_authenticated %}
 
-                <button
-                    type="submit"
-                    class="btn btn-outline-light btn-sm"
+            <div class="d-flex align-items-center">
+
+                <a
+                    href="{% url 'application_list' %}"
+                    class="btn btn-outline-light btn-sm me-3"
                 >
-                    Logout
-                </button>
+                    Applications
+                </a>
 
-            </form>
+                <span class="text-light me-3">
+                    {{ user.username }}
+                </span>
+
+                <form
+                    method="post"
+                    action="{% url 'logout' %}"
+                    class="mb-0"
+                >
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-outline-light btn-sm"
+                    >
+                        Logout
+                    </button>
+                </form>
+
+            </div>
+
+            {% endif %}
 
         </div>
 
+    </nav>
+
+
+    <main class="container py-4 text-dark">
+
+        {% if messages %}
+
+            {% for message in messages %}
+
+            <div
+                class="alert alert-{{ message.tags }}"
+                role="alert"
+            >
+                {{ message }}
+            </div>
+
+            {% endfor %}
+
         {% endif %}
 
-    </div>
 
-</nav>
+        {% block content %}
+        {% endblock %}
 
-
-<main class="container py-4">
-
-    {% block content %}
-    {% endblock %}
-
-</main>
+    </main>
 
 
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
-</script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    ></script>
 
 </body>
 

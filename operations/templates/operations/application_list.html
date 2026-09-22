@@ -1,0 +1,205 @@
+{% extends "operations/base.html" %}
+
+
+{% block title %}
+Applications
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="d-flex justify-content-between
+           align-items-center mb-4"
+>
+
+    <div>
+
+        <h1>
+            Applications
+        </h1>
+
+        <p class="text-muted">
+            Registered applications and
+            their current operational status.
+        </p>
+
+    </div>
+
+
+    {% if is_admin %}
+
+    <a
+        href="{% url 'application_create' %}"
+        class="btn btn-primary"
+    >
+        Register Application
+    </a>
+
+    {% endif %}
+
+</div>
+
+
+<div class="card">
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table
+                class="table table-hover
+                       align-middle"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Name
+                        </th>
+
+                        <th>
+                            Environment
+                        </th>
+
+                        <th>
+                            Owner
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Availability
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for application in applications %}
+
+                    <tr>
+
+                        <td>
+
+                            <a
+                                href="{% url 'application_detail' application.pk %}"
+                            >
+                                {{ application.name }}
+                            </a>
+
+                        </td>
+
+                        <td>
+                            {{ application.environment }}
+                        </td>
+
+                        <td>
+                            {{ application.owner }}
+                        </td>
+
+                        <td>
+
+                            {% if application.status == "HEALTHY" %}
+
+                                <span
+                                    class="badge text-bg-success"
+                                >
+                                    Healthy
+                                </span>
+
+                            {% elif application.status == "DEGRADED" %}
+
+                                <span
+                                    class="badge text-bg-warning"
+                                >
+                                    Degraded
+                                </span>
+
+                            {% elif application.status == "DOWN" %}
+
+                                <span
+                                    class="badge text-bg-danger"
+                                >
+                                    Down
+                                </span>
+
+                            {% else %}
+
+                                <span
+                                    class="badge text-bg-secondary"
+                                >
+                                    Maintenance
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {{ application.availability_percentage }}%
+
+                        </td>
+
+                        <td>
+
+                            <a
+                                href="{% url 'application_detail' application.pk %}"
+                                class="btn btn-sm btn-outline-secondary"
+                            >
+                                View
+                            </a>
+
+                            {% if is_admin %}
+
+                            <a
+                                href="{% url 'application_edit' application.pk %}"
+                                class="btn btn-sm btn-outline-primary"
+                            >
+                                Edit
+                            </a>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="text-center text-muted"
+                        >
+                            No applications have been registered.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
