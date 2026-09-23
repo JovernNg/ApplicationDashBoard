@@ -1526,3 +1526,366 @@ Automated search and filtering tests
 The incident list is now significantly easier to navigate when the number of incident records increases.
 With Milestone 9 complete, the main planned user-facing functionality is implemented.
 The next milestone will focus on systematic functional testing of the complete application, including authentication, role permissions, application management, incident workflows, SLA boundary behaviour, incident updates and dashboard functionality.
+
+# Milestone 10 - Functional Testing
+
+**Date:** 24 September 2026  
+**Status:** Functional test suite implemented; final milestone completion pending successful full regression and manual test recording
+
+### Objective
+
+The objective of this milestone was to perform systematic functional testing of the completed Application Operations and Incident Management Dashboard.
+Unlike previous milestones, Milestone 10 did not introduce a major new user-facing feature.
+The purpose was to verify that the functionality developed across Milestones 1 to 9 works correctly when used together as a complete system.
+Testing focused on:
+Authentication
+Role-based access control
+Application management
+Incident creation
+Incident assignment
+Incident workflow transitions
+Resolution validation
+Object-level incident permissions
+Incident operational updates
+Audit logging
+Search functionality
+Dashboard functionality
+Regression testing
+
+### Work Completed
+
+Created a dedicated functional workflow test module:
+operations/tests/test_functional_flows.py
+Added integrated functional tests covering the main system workflows.
+Created test users representing:
+Administrator
+Operations User 1
+Operations User 2
+Created test application and incident records within the automated test environment.
+Tested authentication requirements for protected pages.
+Tested Administrator application management permissions.
+Tested restrictions preventing Operations Users from creating or editing applications.
+Tested incident creation by an Operations User.
+Tested automatic incident number generation.
+Tested the default New incident status.
+Tested automatic recording of the incident reporter.
+Tested Administrator incident assignment.
+Tested automatic transition from New to Assigned during assignment.
+Tested the complete controlled incident lifecycle.
+Tested required resolution notes.
+Tested object-level permissions between different Operations Users.
+Tested incident timeline updates.
+Tested audit creation for incident updates.
+Tested incident search functionality.
+Tested dashboard operational statistics.
+Prepared a functional testing evidence structure for recording manual functional test results.
+
+### Functional Workflow Test Suite
+
+The automated functional workflow test suite contains 11 integrated tests.
+The tests cover:
+1. Protected pages require authentication.
+2. Administrator can create an application.
+3. Operations User cannot create or edit applications.
+4. Operations User can report an incident.
+5. Administrator can assign an incident.
+6. Assigned Operations User can complete the incident workflow.
+7. Resolution requires resolution notes.
+8. Unassigned Operations User cannot manage another user's incident.
+9. Incident updates are recorded and audited.
+10. Incident search returns the expected incident.
+11. Dashboard displays operational application and incident data.
+These tests complement the smaller unit and feature-specific tests created during earlier milestones.
+
+### Authentication Testing
+
+Protected application pages were tested while logged out.
+The following pages were included:
+Dashboard
+Application List
+Incident List
+The expected behaviour is that an unauthenticated user is redirected to the login page.
+This confirms that core operational pages cannot be accessed without authentication.
+
+### Application Management Testing
+
+Administrator permissions were tested by creating a new application through the normal application creation view.
+The test verifies that:
+The request succeeds.
+The application is stored in the database.
+The submitted owner information is stored correctly.
+An Application Created audit record is generated.
+Operations User restrictions were also tested.
+An Operations User attempts to access:
+Application creation
+Application editing
+The expected response is:
+HTTP 403 Forbidden
+This confirms that application management remains restricted to Administrators.
+
+### Incident Creation Testing
+
+An Operations User was tested using the standard incident reporting workflow.
+The test verifies that:
+The incident is created successfully.
+The incident begins in New status.
+The logged-in user is stored as the reporter.
+An incident number is generated automatically.
+An Incident Created audit record is generated.
+This confirms that the incident creation workflow operates correctly as part of the complete system.
+
+### Incident Assignment Testing
+
+Administrator assignment functionality was tested.
+A New incident is assigned to an Operations User.
+The test verifies that:
+The assigned user is stored correctly.
+The incident automatically changes from New to Assigned.
+An Incident Assigned audit entry is generated.
+This confirms that assignment and workflow logic remain connected correctly.
+
+### Complete Incident Workflow Testing
+
+The complete incident lifecycle was tested using an incident assigned to an Operations User.
+The tested sequence was:
+Assigned
+to
+In Progress
+to
+Resolved
+to
+Closed
+The test verifies that the Assigned Operations User can move the incident from Assigned to In Progress.
+The user then resolves the incident using valid resolution notes.
+The test verifies that:
+Status becomes Resolved.
+resolved_at is recorded.
+Resolution notes are stored.
+The incident is then transitioned from Resolved to Closed.
+The test verifies that:
+Status becomes Closed.
+closed_at is recorded.
+This test provides integrated evidence that the controlled workflow implemented in Milestone 5 continues to work with later system functionality.
+
+### Resolution Validation Testing
+
+The system was tested by attempting to move an In Progress incident to Resolved without entering resolution notes.
+The expected behaviour is:
+The form remains displayed.
+The incident remains In Progress.
+No resolved timestamp is created.
+This confirms that resolution notes remain mandatory and workflow validation cannot be bypassed through a normal POST request.
+
+### Object-Level Permission Testing
+
+Two separate Operations Users were included in the functional test environment.
+An incident was assigned to Operations User 1.
+Operations User 2 then attempted to access:
+Incident status transition functionality
+Incident update creation functionality
+The expected result is:
+HTTP 403 Forbidden
+for both requests.
+This verifies that authentication alone is not sufficient to modify an incident.
+The user must also have permission over the specific incident.
+
+### Incident Update Testing
+
+The assigned Operations User was tested by adding an operational update to an In Progress incident.
+The test verifies that:
+The update is stored.
+The update is linked to the correct incident.
+The logged-in user is stored as the update author.
+The update text is preserved.
+An Incident Update Added audit entry is generated.
+This confirms that the incident timeline and audit trail continue to operate together correctly.
+
+### Search Testing
+
+The incident search functionality introduced in Milestone 9 was tested as part of the integrated workflow suite.
+An incident title was changed to:
+Database Connection Failure
+The incident list was then searched using:
+database connection
+The test verifies that the matching incident number and title are returned.
+This confirms that search functionality remains operational when used with normal incident records.
+
+### Dashboard Testing
+
+The dashboard was tested with an application and an active incident in the test database.
+The test verifies that:
+The dashboard returns HTTP 200.
+The total application count is correct.
+The open incident count is correct.
+The recent incident information is displayed.
+This confirms that the dashboard calculations continue to operate correctly after integration with the rest of the application.
+
+### Functional Test Evidence
+
+A functional test results document was prepared for recording manual test evidence:
+docs/functional-test-results.md
+The functional test plan contains 20 manual test cases.
+The planned manual test cases cover:
+Authentication
+Administrator application creation
+Operations User application restrictions
+Incident reporting
+Incident assignment
+Incident workflow transitions
+Resolution validation
+Object-level permissions
+Incident updates
+Audit logging
+Search
+Filtering
+Dashboard display
+Charts
+SLA information
+Closed incident behaviour
+The manual test document records:
+Test identifier
+Test description
+Expected result
+Actual result
+Pass or fail status
+This evidence can later be referenced in the testing and evaluation section of the final report.
+
+### Manual Functional Test Scenario
+
+A full operational scenario was defined for manual testing.
+The workflow is:
+Administrator creates application
+Operations User 1 reports a Critical incident
+Administrator assigns the incident to Operations User 1
+Operations User 2 attempts to modify the incident
+Access is denied
+Operations User 1 adds an incident timeline update
+Operations User 1 moves the incident to In Progress
+Operations User 1 attempts resolution without notes
+Validation prevents resolution
+Operations User 1 resolves the incident with valid notes
+Operations User 1 closes the incident
+Audit Log is reviewed
+Dashboard is reviewed
+Incident search is tested
+This scenario exercises multiple system components within one realistic operational workflow.
+
+### Problems Encountered
+
+#### Incorrect Application Availability Field
+
+When the new functional workflow tests were first executed, all 11 tests returned errors during test setup.
+The error was:
+TypeError: Application() got unexpected keyword arguments: 'availability'
+The failure occurred before the individual test methods were executed.
+The test setup attempted to create an Application using:
+availability=100
+However, the actual Application model uses the field:
+availability_percentage
+Because the error occurred inside the shared setUp method, all 11 tests failed with the same error.
+The test data was corrected from:
+availability=100
+to:
+availability_percentage=100
+The application creation POST data used by the functional test was also corrected from:
+"availability": "99.50"
+to:
+"availability_percentage": "99.50"
+This aligned the functional test suite with the actual Application model.
+The error demonstrated the importance of keeping integrated tests consistent with the implemented database model.
+
+### Test Count Correction
+
+The initial Milestone 10 development plan referred to 10 new functional workflow tests.
+When the test suite was executed, Django reported:
+Ran 11 tests
+Review confirmed that the functional workflow test file actually contained 11 test methods.
+The expected Milestone 10 functional test count was therefore corrected to 11.
+
+### Regression Testing
+
+After the Milestone 10 functional tests pass, the full existing automated test suite should be executed using:
+python manage.py test
+This regression test is required to verify that functionality introduced during earlier milestones continues to work.
+Passing the new functional tests alone is not sufficient.
+The complete regression suite must also return:
+OK
+before Milestone 10 is considered fully complete.
+
+### Evidence Collection
+
+Milestone 10 also introduced the requirement to capture useful screenshots while the system is functioning correctly.
+Recommended evidence includes:
+Dashboard
+Incident detail while In Progress
+SLA information
+Incident timeline
+HTTP 403 result for an unauthorised Operations User
+Resolution validation message
+Closed incident
+Audit Log
+Search and filtering results
+These screenshots can later be selected for inclusion in the final report.
+The purpose is to collect evidence during testing rather than attempting to recreate it close to the report deadline.
+
+### Functional Requirement Coverage
+
+The testing performed during this milestone provides integrated verification for functionality developed throughout the project.
+Authentication is supported by Milestone 1.
+Role-based permissions are supported by Milestone 1 and later object-level permission logic.
+Application management is supported by Milestone 2.
+Audit logging is supported by Milestone 3.
+Incident management is supported by Milestone 4.
+Controlled incident workflow is supported by Milestone 5.
+SLA monitoring is supported by Milestone 6.
+Incident timeline functionality is supported by Milestone 7.
+Dashboard analytics are supported by Milestone 8.
+Search and filtering are supported by Milestone 9.
+Milestone 10 provides integrated functional verification across these components.
+
+### Security Considerations
+
+Although comprehensive security testing is reserved for Milestone 11, functional testing already verifies several important access-control behaviours.
+Unauthenticated users cannot access protected operational pages.
+Operations Users cannot perform Administrator-only application management actions.
+An Operations User cannot transition an incident assigned to another user.
+An Operations User cannot add timeline updates to an incident assigned to another user.
+These checks provide preliminary verification that role and object-level controls continue to work correctly.
+More deliberate attempts to bypass security controls will be performed during Milestone 11.
+
+### Data Integrity Considerations
+
+Functional testing verifies that important workflow-generated data is recorded correctly.
+This includes:
+Generated incident numbers
+Incident reporter
+Assigned user
+Incident status
+Resolution notes
+Resolution timestamp
+Closure timestamp
+Incident timeline user attribution
+Audit records
+The workflow tests also verify that invalid transitions or incomplete resolution information do not incorrectly alter the incident record.
+
+### Testing Approach
+
+Milestone 10 combines automated and manual testing.
+Automated tests provide repeatable verification of expected system behaviour.
+Manual testing provides evidence that the complete browser-based user workflow behaves correctly from a user's perspective.
+The combination provides stronger evaluation evidence than relying only on one testing method.
+
+### Current Outcome
+
+The Milestone 10 integrated functional test suite has been implemented.
+A field-name mismatch in the test setup was identified and corrected.
+The functional test suite contains 11 tests.
+The manual functional testing evidence structure has been defined.
+Milestone 10 should be marked fully completed after:
+All 11 Milestone 10 automated tests return OK.
+The complete project regression suite returns OK.
+The planned manual functional tests are executed and recorded.
+Relevant testing screenshots are captured.
+Any defects discovered during manual testing are corrected and retested.
+Once these conditions are satisfied, the project can proceed to Milestone 11.
+The next milestone will focus on Security and Object-Level Authorization Testing, including deliberate attempts to bypass authentication and authorization controls, CSRF protection, XSS handling, SQL-injection-style input, session behaviour, direct URL manipulation and administrative bypass risks.
