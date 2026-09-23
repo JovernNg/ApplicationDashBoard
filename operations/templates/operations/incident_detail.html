@@ -105,7 +105,33 @@
             </dt>
 
             <dd class="col-sm-9">
-                {{ incident.get_priority_display }}
+
+                {% if incident.priority == "CRITICAL" %}
+
+                <span class="badge text-bg-danger">
+                    Critical
+                </span>
+
+                {% elif incident.priority == "HIGH" %}
+
+                <span class="badge text-bg-warning">
+                    High
+                </span>
+
+                {% elif incident.priority == "MEDIUM" %}
+
+                <span class="badge text-bg-primary">
+                    Medium
+                </span>
+
+                {% else %}
+
+                <span class="badge text-bg-secondary">
+                    Low
+                </span>
+
+                {% endif %}
+
             </dd>
 
 
@@ -115,6 +141,108 @@
 
             <dd class="col-sm-9">
                 {{ incident.get_status_display }}
+            </dd>
+
+
+            <dt class="col-sm-3">
+                SLA Target
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ sla_target_hours }} hours
+            </dd>
+
+
+            <dt class="col-sm-3">
+                SLA Deadline
+            </dt>
+
+            <dd class="col-sm-9">
+                {{ sla_deadline|date:"d M Y H:i:s" }}
+            </dd>
+
+
+            <dt class="col-sm-3">
+                SLA Status
+            </dt>
+
+            <dd class="col-sm-9">
+
+                {% if sla_status == "BREACHED" %}
+
+                <span class="badge text-bg-danger">
+                    {{ sla_status_label }}
+                </span>
+
+                {% elif sla_status == "AT_RISK" %}
+
+                <span class="badge text-bg-warning">
+                    {{ sla_status_label }}
+                </span>
+
+                {% else %}
+
+                <span class="badge text-bg-success">
+                    {{ sla_status_label }}
+                </span>
+
+                {% endif %}
+
+            </dd>
+
+
+            <dt class="col-sm-3">
+                SLA Elapsed
+            </dt>
+
+            <dd class="col-sm-9">
+
+                <div class="d-flex justify-content-between mb-1">
+
+                    <span>
+                        {{ sla_progress }}% elapsed
+                    </span>
+
+                    <span class="text-secondary">
+                        {{ sla_target_hours }} hour target
+                    </span>
+
+                </div>
+
+                <div
+                    class="progress"
+                    style="height: 22px;"
+                    role="progressbar"
+                    aria-valuenow="{{ sla_progress }}"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                >
+
+                    <div
+                        class="
+                            progress-bar
+
+                            {% if sla_status == 'BREACHED' %}
+                                bg-danger
+
+                            {% elif sla_status == 'AT_RISK' %}
+                                bg-warning text-dark
+
+                            {% else %}
+                                bg-success
+                            {% endif %}
+                        "
+                        style="width: {{ sla_progress }}%;"
+                    >
+
+                        {% if sla_progress >= 10 %}
+                            {{ sla_progress }}%
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
             </dd>
 
 

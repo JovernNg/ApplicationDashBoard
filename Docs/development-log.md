@@ -620,3 +620,179 @@ Object-level access restrictions
 Automated workflow tests
 The incident management functionality now enforces business rules rather than allowing unrestricted status changes.
 The next milestone will implement the SLA engine, including priority-based SLA targets, deadline calculation, At Risk thresholds and SLA breach detection.
+
+### Milestone 6 - SLA Engine
+Date: 23 September 2026
+Status: Completed
+
+### Objective
+
+The objective of this milestone was to implement a Service Level Agreement (SLA) calculation engine for incidents.
+The SLA engine determines how long an incident has been open relative to its priority-based target and classifies the incident as Within SLA, At Risk or Breached.
+The SLA logic also stops counting elapsed time once an incident reaches the Resolved state.
+Work Completed
+Created a dedicated SLA service in operations/services/sla.py.
+Defined the following SLA targets:
+Critical = 2 hours
+High = 4 hours
+Medium = 8 hours
+Low = 24 hours
+Created reusable functions to calculate:
+SLA target duration
+SLA deadline
+SLA reference time
+SLA status
+SLA elapsed percentage
+Configured the SLA deadline to be calculated from the incident reporting timestamp.
+Configured SLA calculations to use calendar time rather than business hours.
+Implemented the following SLA status rules:
+Below 75% elapsed = Within SLA
+Exactly 75% elapsed = At Risk
+Between 75% and less than 100% elapsed = At Risk
+Exactly 100% elapsed = Breached
+Above 100% elapsed = Breached
+Configured the SLA clock to stop when the incident reaches Resolved.
+Configured resolved incidents to continue displaying the SLA state that existed at the resolution time instead of continuing to accumulate elapsed time.
+Added SLA information to the incident list page.
+Added SLA information to the incident detail page.
+Added SLA target display.
+Added SLA deadline display.
+Added SLA status badges.
+Added an SLA elapsed progress indicator.
+Added automated SLA tests for priority targets, thresholds, deadline handling and resolution-time behaviour.
+
+### Design Decisions
+
+The SLA information is calculated dynamically instead of being stored as duplicated database values.
+The system already stores the incident priority, reporting timestamp and resolution timestamp, so the SLA deadline and status can be derived from those values.
+This avoids storing data that could become inconsistent with the incident record.
+The SLA rules are implemented in a dedicated service rather than directly inside the Django views.
+This allows the calculations to be reused by the incident list, incident detail page, dashboard and future reporting functionality.
+The SLA target is selected according to incident priority.
+The defined targets are:
+Critical = 2 hours
+High = 4 hours
+Medium = 8 hours
+Low = 24 hours
+The At Risk threshold is defined as 75% of the SLA target.
+The implementation uses an inclusive threshold.
+This means that an incident becomes At Risk exactly when 75% of its available SLA time has elapsed.
+The deadline check is also inclusive.
+This means that an incident is classified as Breached exactly when the SLA deadline is reached rather than only after the deadline has passed.
+SLA Calculation Behaviour
+For a Critical incident with a two-hour SLA target:
+Reported at 20:00
+75% threshold = 21:30
+SLA deadline = 22:00
+From 20:00 until before 21:30, the incident is classified as Within SLA.
+At exactly 21:30, the incident becomes At Risk.
+Between 21:30 and before 22:00, the incident remains At Risk.
+At exactly 22:00, the incident becomes Breached.
+The incident remains Breached after the deadline unless it was resolved earlier.
+Resolution-Time Behaviour
+The SLA clock stops when an incident reaches Resolved.
+For example, if a Critical incident is reported at 20:00 and resolved at 21:00, the elapsed SLA time is one hour out of a two-hour target.
+The incident therefore remains:
+50% elapsed
+Within SLA
+If the same incident is viewed several hours later, the elapsed percentage remains 50% because the SLA reference time is the recorded resolution timestamp.
+If the incident is resolved at 21:45, the elapsed percentage is approximately 87.5%.
+The incident is therefore classified as At Risk.
+If the incident is resolved exactly at 22:00, the incident is classified as Breached because the SLA deadline has been reached.
+
+### User Interface Changes
+
+The incident list was updated to display the SLA condition for each incident.
+The SLA states are displayed using visual badges:
+Within SLA
+At Risk
+Breached
+The incident list also displays the calculated SLA deadline.
+The incident detail page was updated to display:
+SLA target
+SLA deadline
+SLA status
+SLA elapsed percentage
+SLA progress indicator
+The progress bar provides a visual representation of the percentage of the SLA target that has elapsed.
+SLA Progress Indicator
+The first version of the SLA progress indicator displayed a Bootstrap progress bar using the calculated SLA percentage.
+During testing, a newly created incident showed an almost empty progress bar.
+This initially appeared to be a display issue, but the calculated value was correct because only a very small percentage of the SLA target had elapsed.
+The interface was improved so that the numeric elapsed percentage is displayed above the progress bar.
+This allows the user to see the exact SLA elapsed value even when the filled section of the bar is very small.
+The interface also displays the SLA target duration beside the elapsed percentage.
+For example:
+0.1% elapsed
+2 hour target
+CSS Template Validation Issue
+While implementing the SLA progress bar, VS Code reported the following CSS validation warning:
+property value expected css(css-propertyvalueexpected)
+The warning was caused by Django template syntax being used directly inside an inline CSS width value.
+The original approach used a value similar to:
+style="width: {{ sla_progress }}%;"
+Django could render this correctly in the browser, but the VS Code CSS validator could not interpret the Django template expression.
+The implementation was changed to store the calculated percentage in a custom HTML data attribute.
+JavaScript then reads the value and applies it to the progress bar width.
+This removed the CSS validation warning while retaining the dynamic progress behaviour.
+The JavaScript also constrains the displayed progress value between 0% and 100%.
+
+### Testing Performed
+
+The following SLA behaviours were tested:
+Critical incidents have a two-hour SLA target.
+High incidents have a four-hour SLA target.
+Medium incidents have an eight-hour SLA target.
+Low incidents have a twenty-four-hour SLA target.
+The SLA deadline is calculated correctly from the reported timestamp.
+An incident below 75% elapsed is classified as Within SLA.
+An incident at exactly 75% elapsed is classified as At Risk.
+An incident above 75% but below the deadline remains At Risk.
+An incident at exactly the SLA deadline is classified as Breached.
+An incident after the SLA deadline is classified as Breached.
+The SLA clock stops when the incident reaches Resolved.
+A resolved incident does not later become Breached simply because more real time passes.
+A resolved incident preserves its SLA status based on the resolution timestamp.
+The SLA progress percentage is calculated correctly.
+The automated SLA tests were executed using:
+python manage.py test operations.tests.test_sla -v 2
+The complete project test suite was executed using:
+python manage.py test
+The tests completed successfully with an OK result.
+Security and Data Integrity Considerations
+Users do not manually enter SLA deadlines or SLA statuses.
+The SLA deadline is calculated by the system using the incident priority and reporting timestamp.
+The SLA status is also calculated by the system.
+This prevents users from manually altering an incident's SLA classification.
+Resolution timestamps are generated by the controlled incident workflow rather than entered manually through the incident creation interface.
+This means the SLA engine relies on timestamps that are generated by the system-controlled workflow.
+Problems Encountered
+A display issue was identified with the SLA elapsed progress bar.
+When an incident had only just been created, the elapsed percentage was very close to zero and the progress bar appeared empty.
+The underlying calculation was correct, but the display did not clearly communicate the small percentage.
+The incident detail interface was updated to show the numeric elapsed percentage separately from the progress bar.
+A second issue involved the VS Code CSS validator reporting an error when Django template syntax was placed directly inside an inline CSS width value.
+The progress bar implementation was changed to use a data attribute and JavaScript to apply the width after the page loads.
+After this change, the progress bar displayed correctly and the CSS validation warning was removed.
+
+### Outcome
+
+Milestone 6 was completed successfully.
+The system now provides priority-based SLA calculations with:
+Critical two-hour target
+High four-hour target
+Medium eight-hour target
+Low twenty-four-hour target
+Automatic SLA deadline calculation
+Within SLA classification
+At Risk classification
+Breached classification
+75% At Risk threshold
+Exact-deadline breach handling
+Resolution-time clock stopping
+SLA status display in the incident register
+SLA information on the incident detail page
+Visual SLA progress indication
+Automated SLA boundary tests
+The SLA engine now provides the logic required for dashboard breach counts and future SLA-focused reporting.
+The next milestone will implement the incident update timeline so that users can record chronological operational updates against an incident.

@@ -72,6 +72,14 @@ Incidents
                         </th>
 
                         <th>
+                            SLA
+                        </th>
+
+                        <th>
+                            SLA Deadline
+                        </th>
+
+                        <th>
                             Reported
                         </th>
 
@@ -83,87 +91,131 @@ Incidents
 
                 {% for incident in incidents %}
 
-                    <tr>
+                <tr>
 
-                        <td>
+                    <td>
 
-                            <a
-                                href="{% url 'incident_detail' incident.pk %}"
-                            >
-                                {{ incident.incident_number }}
-                            </a>
+                        <a
+                            href="{% url 'incident_detail' incident.pk %}"
+                        >
+                            {{ incident.incident_number }}
+                        </a>
 
-                        </td>
+                    </td>
 
-                        <td>
-                            {{ incident.application.name }}
-                        </td>
 
-                        <td>
-                            {{ incident.title }}
-                        </td>
+                    <td>
+                        {{ incident.application.name }}
+                    </td>
 
-                        <td>
 
-                            {% if incident.priority == "CRITICAL" %}
+                    <td>
+                        {{ incident.title }}
+                    </td>
 
-                            <span
-                                class="badge text-bg-danger"
-                            >
-                                Critical
-                            </span>
 
-                            {% elif incident.priority == "HIGH" %}
+                    <td>
 
-                            <span
-                                class="badge text-bg-warning"
-                            >
-                                High
-                            </span>
+                        {% if incident.priority == "CRITICAL" %}
 
-                            {% elif incident.priority == "MEDIUM" %}
+                        <span
+                            class="badge text-bg-danger"
+                        >
+                            Critical
+                        </span>
 
-                            <span
-                                class="badge text-bg-primary"
-                            >
-                                Medium
-                            </span>
+                        {% elif incident.priority == "HIGH" %}
 
-                            {% else %}
+                        <span
+                            class="badge text-bg-warning"
+                        >
+                            High
+                        </span>
 
-                            <span
-                                class="badge text-bg-secondary"
-                            >
-                                Low
-                            </span>
+                        {% elif incident.priority == "MEDIUM" %}
 
-                            {% endif %}
+                        <span
+                            class="badge text-bg-primary"
+                        >
+                            Medium
+                        </span>
 
-                        </td>
+                        {% else %}
 
-                        <td>
-                            {{ incident.get_status_display }}
-                        </td>
+                        <span
+                            class="badge text-bg-secondary"
+                        >
+                            Low
+                        </span>
 
-                        <td>
-                            {{ incident.reported_at|date:"d M Y H:i" }}
-                        </td>
+                        {% endif %}
 
-                    </tr>
+                    </td>
+
+
+                    <td>
+                        {{ incident.get_status_display }}
+                    </td>
+
+
+                    <td>
+
+                        {% if incident.sla_status_value == "BREACHED" %}
+
+                        <span
+                            class="badge text-bg-danger"
+                        >
+                            Breached
+                        </span>
+
+                        {% elif incident.sla_status_value == "AT_RISK" %}
+
+                        <span
+                            class="badge text-bg-warning"
+                        >
+                            At Risk
+                        </span>
+
+                        {% else %}
+
+                        <span
+                            class="badge text-bg-success"
+                        >
+                            Within SLA
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        {{ incident.sla_deadline_value|date:"d M Y H:i" }}
+
+                    </td>
+
+
+                    <td>
+
+                        {{ incident.reported_at|date:"d M Y H:i" }}
+
+                    </td>
+
+                </tr>
 
                 {% empty %}
 
-                    <tr>
+                <tr>
 
-                        <td
-                            colspan="6"
-                            class="text-center text-secondary"
-                        >
-                            No incidents have
-                            been reported.
-                        </td>
+                    <td
+                        colspan="8"
+                        class="text-center text-secondary"
+                    >
+                        No incidents have been reported.
+                    </td>
 
-                    </tr>
+                </tr>
 
                 {% endfor %}
 

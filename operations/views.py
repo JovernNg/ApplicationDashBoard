@@ -40,6 +40,14 @@ from .services.workflow import (
     transition_incident,
 )
 
+from .services.sla import (
+    SLA_LABELS,
+    calculate_sla_deadline,
+    calculate_sla_progress,
+    calculate_sla_status,
+    get_sla_target,
+)
+
 from django.db import transaction
 
 @login_required
@@ -320,7 +328,7 @@ def audit_log_list(request):
 @login_required
 def incident_list(request):
 
-    incidents = (
+    incidents = list(
         Incident.objects
         .select_related(
             "application",
@@ -329,6 +337,30 @@ def incident_list(request):
         )
         .all()
     )
+
+    for incident in incidents:
+
+        sla_status = (
+            calculate_sla_status(
+                incident
+            )
+        )
+
+        incident.sla_status_value = (
+            sla_status
+        )
+
+        incident.sla_status_label = (
+            SLA_LABELS[
+                sla_status
+            ]
+        )
+
+        incident.sla_deadline_value = (
+            calculate_sla_deadline(
+                incident
+            )
+        )
 
     return render(
         request,
@@ -380,12 +412,61 @@ def incident_detail(
         )
     )
 
+    sla_target = get_sla_target(
+        incident
+    )
+
+    sla_status = (
+        calculate_sla_status(
+            incident
+        )
+    )
+
+    sla_deadline = (
+        calculate_sla_deadline(
+            incident
+        )
+    )
+
+    sla_progress = (
+        calculate_sla_progress(
+            incident
+        )
+    )
+
     context = {
         "incident": incident,
+
         "is_admin": is_admin,
+
         "can_manage": can_manage,
+
         "can_transition":
             can_transition,
+
+        "sla_target_hours":
+            int(
+                sla_target
+                .total_seconds()
+                // 3600
+            ),
+
+        "sla_status":
+            sla_status,
+
+        "sla_status_label":
+            SLA_LABELS[
+                sla_status
+            ],
+
+        "sla_deadline":
+            sla_deadline,
+
+        "sla_progress":
+            round(
+                sla_progress,
+                1,
+            ),
     }
 
     return render(
