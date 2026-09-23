@@ -2212,8 +2212,6 @@ OWASP ZAP evaluation preparation
 Django deployment security considerations
 The next milestone focuses on measuring system performance and evaluating usability with representative user tasks.
 
-
-
 # Milestone 12 - Performance and Usability Evaluation
 
 **Date:** 24 September 2026
@@ -2632,3 +2630,429 @@ Security behaviour
 Performance
 Usability
 The next engineering milestone is Milestone 13, which will focus on realistic demonstration data, final regression testing, minor interface cleanup and preparation of a stable final demonstration version.
+
+# Milestone 13 - Final Demo Data, Regression Testing and Release Preparation
+
+**Date:** 24 September 2026  
+**Status:** Completed
+
+### Objective
+
+The objective of Milestone 13 was to prepare the Application Operations and Incident Management Dashboard for final demonstration, validation and submission.
+This milestone did not introduce major new functional requirements.
+The focus was on:
+Creating a clean and repeatable demonstration dataset
+Validating the final database and migration state
+Performing final regression testing
+Reviewing the user interface for minor defects
+Preparing demonstration documentation
+Updating project documentation
+Establishing a stable feature-complete version of the application
+
+### Work Completed
+
+Created a repeatable demonstration data management command:
+operations/management/commands/seed_demo_data.py
+Created controlled demonstration user accounts.
+Created demonstration applications covering all application health states.
+Created demonstration incidents covering all priority levels.
+Created demonstration incidents covering the full workflow lifecycle.
+Created examples of different SLA states.
+Created incident timeline updates.
+Created demonstration audit records.
+Configured the demonstration data command so it can be rerun without continually creating duplicate demo records.
+Prepared a clean final demonstration environment.
+Reviewed the application through all major user workflows.
+Checked database migration consistency.
+Executed Django system checks.
+Executed the full automated regression test suite.
+Prepared a final validation document.
+Prepared a final demonstration checklist.
+Updated the project README.
+Established the application as feature-complete.
+
+### Demonstration Dataset
+
+A dedicated demonstration dataset was created for final screenshots, walkthroughs and evaluation.
+The dataset was designed to produce meaningful variation across the dashboard rather than relying on development records accumulated during implementation.
+The demonstration dataset includes four applications:
+Demo Payment Portal
+Demo Customer Portal
+Demo Reporting Service
+Demo HR Self Service
+The applications cover the following statuses:
+Healthy
+Degraded
+Down
+Maintenance
+This ensures that the Application Status chart contains data across every supported operational state.
+
+### Demonstration Incident Data
+
+Six demonstration incidents were created.
+The dataset includes incidents covering:
+Critical priority
+High priority
+Medium priority
+Low priority
+The incident records also cover multiple workflow states:
+New
+Assigned
+In Progress
+Resolved
+Closed
+This allows the final demonstration to show the complete range of incident behaviour without manually creating records immediately before the presentation.
+
+### SLA Demonstration Data
+
+The demonstration incident timestamps were intentionally adjusted so that the dataset contains different SLA conditions.
+The dataset includes examples of:
+Within SLA
+At Risk
+Breached
+This makes it possible to demonstrate the SLA engine directly from the final dashboard and Incident Detail pages.
+The Critical incident is configured with a sufficiently old reported timestamp to produce a Breached SLA state.
+The High priority incident is configured near the SLA threshold to demonstrate an At Risk state.
+Other incidents demonstrate normal Within SLA behaviour.
+
+### Demo User Accounts
+
+Three demonstration users were created.
+The accounts are:
+demo_admin
+demo_operator1
+demo_operator2
+The Administrator account belongs to the Administrator group.
+The two operator accounts belong to the Operations User group.
+This provides a controlled environment for demonstrating both role-based and object-level authorization.
+The demonstration credentials are development credentials only and are not intended for production use.
+
+### Role Demonstration
+
+The demonstration Administrator account can be used to show:
+Application management
+Incident assignment
+Audit Log access
+Dashboard access
+Incident review
+Administrator-only controls
+The demonstration Operations User accounts can be used to show:
+Incident reporting
+Incident timeline updates
+Incident workflow transitions
+Assigned-incident management
+Object-level authorization restrictions
+This allows authorization behaviour to be demonstrated without relying on personal development accounts.
+
+### Repeatable Demo Data Command
+
+The demonstration dataset is created using:
+python manage.py seed_demo_data
+The command first removes the existing controlled demonstration records.
+It then recreates the same named demonstration users, applications, incidents, timeline updates and audit records.
+The command targets only the predefined demonstration records rather than deleting unrelated development records.
+This makes the command safer to rerun while still producing a predictable demonstration environment.
+
+### Development Data Cleanup
+
+During Milestone 13 it was identified that older development records remained in the working database.
+These records could distort:
+Dashboard counts
+Application status charts
+Incident priority charts
+Recent incident lists
+SLA counts
+Final screenshots
+For final demonstration purposes, a clean controlled database was therefore recommended.
+The existing SQLite database was backed up before cleanup.
+Example backup command:
+copy db.sqlite3 db_before_m13.sqlite3
+The development database could then be reset using:
+python manage.py flush
+After the reset, the controlled demonstration dataset was recreated using:
+python manage.py seed_demo_data
+This provides a reproducible final environment while preserving the older development database as a backup.
+
+### Database Reset Considerations
+
+The Django flush command removes application data but preserves the database schema.
+It also removes user accounts.
+The demonstration data command recreates the three demonstration accounts.
+If Django Admin access is still required after flushing, the development superuser must be recreated using:
+python manage.py createsuperuser
+The bakup database can be restored if required by replacing the current SQLite database with the saved backup.
+
+### Final User Interface Review
+
+A final walkthrough was performed across the main application journey:
+Login
+Dashboard
+Application List
+Application Detail
+Application management
+Incident List
+Search and filtering
+Incident Detail
+Incident assignment
+Incident timeline
+Incident status transition
+SLA display
+Audit Log
+Logout
+The purpose of this review was to identify minor presentation or usability defects.
+At this stage the project was treated as feature-complete.
+Changes were limited to genuine defects or minor presentation corrections rather than new functionality.
+
+### Migration Consistency Check
+
+Database model and migration consistency were checked using:
+python manage.py makemigrations --check --dry-run
+The intended final result is:
+No changes detected
+This confirms that the Django models are fully represented by the migration files.
+Migration status was also reviewed using:
+python manage.py showmigrations operations
+All required operations migrations should be marked as applied.
+### Django System Validation
+The standard Django system check was executed using:
+python manage.py check
+The expected result is:
+System check identified no issues
+The Django deployment check was also retained:
+python manage.py check --deploy
+Any warnings generated by the deployment check re interpreted as deployment-hardening considerations rather than automatically treated as prototype defects.
+Examples include:
+DEBUG configuration
+HTTPS requirements
+Secure cookies
+HSTS
+SECRET_KEY management
+These were already considered as part of the Milestone 11 security evaluation.
+
+### Final Regression Testing
+
+The complete automated test suite was executed using:
+python manage.py test -v 2
+The purpose of the final regression run was to confirm that functionality introduced across the entire project still operates correctly after:
+Security hardening
+Evaluation preparation
+Demo data toolin
+Documentation changes
+The final test run should include tests developed across:
+Authentication
+Permissions
+Application management
+Audit trail
+Incident management
+Workflow
+SLA calculations
+Incident timeline
+Dashboard
+Search and filtering
+Functional workflows
+Security controls
+The final result should return:
+OK
+The actual test count and execution time should be recorded in the final validation document.
+
+### Final Validation Documentation
+
+A final validation document was prepared:
+docs/final-validation.md
+The document records:
+Django system check result
+Migration consistency result
+Migration status
+Automated regression test count
+Passed tests
+Failed tests
+Errors
+Demonstration dataset contents
+Manual final checks
+Known limitations
+Final system status
+This provides a concise record of the state of the system immediately before final submission.
+
+### Demonstration Checklist
+
+A demonstration checklist was prepared:
+docs/demo-checklist.md
+The checklist defines the steps required before a final demonstration.
+These include:
+Generate controlled demo data
+Run Django system checks
+Run the automated test suite
+Start the development server
+Open the local application
+The document also contains a suggested presentation flow.
+
+### Suggested Demonstration Flow
+
+The prepared final demonstration sequence is:
+Login
+Dashboard
+Summary cards
+Applications by Status chart
+Open Incidents by Priority chart
+Critical breached incident
+SLA information
+Incident Timeline
+Controlled workflow
+Search and filtering
+Audit Log
+Logout
+Operations User login
+Role restrictions
+Object-level authorization
+This sequence highlights the strongest technical elements of the project without spending excessive time on secondary functionality.
+
+### README Update
+
+The project README was updated to reflect the final state of the application.
+The README now documents:
+Project purpose
+Main functionality
+Authentication and roles
+Application management
+Incident management
+Controlled workflow
+SLA logic
+Incident timeline
+Audit trail
+Dashboard analytics
+Search and filtering
+Technology stack
+Project structure
+Installation instructions
+Virtual environment setup
+Dependency installation
+Database migrations
+Role creation
+Server startup
+Demo data generation
+Demo accounts
+Database reset process
+Automated testing
+Django checks
+Deployment checks
+Performance testing
+Security testing
+Usability evaluation
+Final demonstration preparation
+Known prototype limitations
+Development milestone status
+The README intentionally avoids claiming final performance results, final test counts or usability scores until those measurements are actually recorded.
+
+### Final Screenshots
+
+The controlled demonstration dataset provides a consistent basis for final screenshots.
+Recommended screenshot evidence includes:
+Dashboard
+Critical breached incident
+Incident SLA information
+Incident Timeline
+Workflow transition screen
+Audit Log
+Search and filtering
+HTTP 403 authorization result
+Application management interface
+The final report does not need to include every screenshot.
+The screenshots should be selected based on which ones provide the strongest evidence of implemented functionality and technical achievement.
+
+### Feature Freeze
+
+After Milestone 13, the application was placed into a feature-freeze state.
+No further major functionality should be introduced.
+Future code changes should normally be limited to:
+Confirmed defects
+Evaluation-supported usability corrections
+Documentation corrections
+Submission packaging issues
+Any code change made after the feature freeze should be followed by:
+python manage.py test
+The regression suite should continue to return:
+OK
+before the change is accepted.
+
+### Final Engineering State
+
+At the end of Milestone 13, the main engineering milestones are complete:
+M0 Project Setup
+M1 Authentication and Roles
+M2 Application Management
+M3 Audit Trail
+M4 Incident Management
+M5 Controlled Incident Workflow
+M6 SLA Engine
+M7 Incident Timeline
+M8 Dashboard Analytics
+M9 Search and Filtering
+M10 Functional Testing
+M11 Security Testing
+M12 Performance and Usability Evaluation Framework
+M13 Final Demo Data and System Validation
+The application is now considered feature-complete.
+
+### Remaining Project Work
+
+The remaining project work is primarily evaluation and reporting rather than implementation.
+Outstanding activities may include:
+Record actual performance measurements
+Complete usability testing with participants
+Calculate task success rates
+Calculate individual SUS scores
+Calculate mean SUS score
+Analyse participant feedback
+Record OWASP ZAP findings if not yet completed
+Select final screenshots
+Complete final validation evidence
+Write and revise the final report
+Prepare submission materials
+
+### Known Prototype Limitations
+
+The final prototype retains several intentional limitations.
+These include:
+SQLite is used instead of a production-scale database.
+The Django development server is used for local evaluation.
+Performance testing is conducted in a controlled local environment.
+The usability evaluation uses a small formative participant sample.
+The system does not automatically receive incidents from external monitoring platforms.
+The system does not integrate with infrastructure monitoring tools.
+The system does not currently send email or external notifications.
+Production HTTPS and hosting configuration are outside the scope of the local prototype.
+These limitations should be discussed transparently in the final report.
+
+### Problems Encountered
+
+The main issue identified during Milestone 13 was that historical development data remained in the database.
+Although the seed command correctly created the controlled demonstration records, older application and incident records continued to influence the dashboard.
+This could make the final demonstration inconsistent and cause screenshots to display unexpected totals.
+The issue was addressed by recommending a controlled final database reset.
+The existing SQLite database was first backed up.
+The working database was then flushed and the controlled demonstration dataset recreated.
+This resulted in a cleaner and more reproducible final demonstration environment.
+A secondary consideration was avoiding unnecessary changes late in the project.
+To reduce regression risk, Milestone 13 established a feature freeze and limited further development to confirmed defects and evaluation-supported corrections.
+
+### Outcome
+
+Milestone 13 completed the final engineering preparation of the Application Operations and Incident Management Dashboard.
+The system now has:
+A repeatable demonstration dataset
+Controlled demonstration user accounts
+Application records covering every health state
+Incident records covering every priority
+Incident records covering every workflow state
+Multiple SLA conditions
+Timeline examples
+Audit examples
+A clean demonstration environment
+Migration consistency checks
+Final system checks
+Full regression testing procedure
+Final validation documentation
+Demonstration documentation
+Updated README documentation
+A feature-freeze policy
+The project is now ready to transition from implementation work to final evaluation analysis, evidence selection and report completion.
