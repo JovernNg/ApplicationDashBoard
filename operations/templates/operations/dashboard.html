@@ -1,30 +1,608 @@
 {% extends "operations/base.html" %}
 
 
+{% block title %}
+Operations Dashboard
+{% endblock %}
+
+
 {% block content %}
 
-<h1>
-    Application Operations Dashboard
-</h1>
+<div class="mb-4">
 
-<div class="alert alert-success">
+    <h1 class="text-dark">
+        Application Operations Dashboard
+    </h1>
 
-    Authentication successful.
-
-    Logged in as:
-
-    <strong>
-        {{ user.username }}
-    </strong>
+    <p class="text-secondary mb-0">
+        Current application health,
+        incident activity and SLA status.
+    </p>
 
 </div>
 
 
-<a
-    href="{% url 'administrator_test' %}"
-    class="btn btn-outline-primary"
->
-    Test Administrator Access
-</a>
+<div class="row g-3 mb-4">
+
+    <div class="col-md-6 col-xl-2">
+
+        <div
+            class="card shadow-sm h-100
+                   border-start border-4
+                   border-primary"
+        >
+
+            <div class="card-body">
+
+                <div class="text-secondary">
+                    Total Applications
+                </div>
+
+                <div class="display-6 fw-semibold text-dark">
+                    {{ total_applications }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-6 col-xl-2">
+
+        <div
+            class="card shadow-sm h-100
+                   border-start border-4
+                   border-success"
+        >
+
+            <div class="card-body">
+
+                <div class="text-secondary">
+                    Healthy Applications
+                </div>
+
+                <div class="display-6 fw-semibold text-dark">
+                    {{ healthy_applications }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-6 col-xl-2">
+
+        <div
+            class="card shadow-sm h-100
+                   border-start border-4
+                   border-warning"
+        >
+
+            <div class="card-body">
+
+                <div class="text-secondary">
+                    Problem Applications
+                </div>
+
+                <div class="display-6 fw-semibold text-dark">
+                    {{ problem_applications }}
+                </div>
+
+                <div class="small text-secondary">
+                    Degraded + Down
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-6 col-xl-2">
+
+        <div
+            class="card shadow-sm h-100
+                   border-start border-4
+                   border-info"
+        >
+
+            <div class="card-body">
+
+                <div class="text-secondary">
+                    Open Incidents
+                </div>
+
+                <div class="display-6 fw-semibold text-dark">
+                    {{ open_incident_count }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-6 col-xl-2">
+
+        <div
+            class="card shadow-sm h-100
+                   border-start border-4
+                   border-danger"
+        >
+
+            <div class="card-body">
+
+                <div class="text-secondary">
+                    Critical Incidents
+                </div>
+
+                <div class="display-6 fw-semibold text-dark">
+                    {{ critical_incident_count }}
+                </div>
+
+                <div class="small text-secondary">
+                    Open Critical
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-6 col-xl-2">
+
+        <div
+            class="card shadow-sm h-100
+                   border-start border-4
+                   border-danger"
+        >
+
+            <div class="card-body">
+
+                <div class="text-secondary">
+                    SLA Breaches
+                </div>
+
+                <div class="display-6 fw-semibold text-dark">
+                    {{ sla_breach_count }}
+                </div>
+
+                <div class="small text-secondary">
+                    Open incidents
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-header bg-white">
+
+                <h2 class="h5 mb-0">
+                    Applications by Status
+                </h2>
+
+            </div>
+
+            <div class="card-body">
+
+                <div
+                    style="
+                        position: relative;
+                        height: 320px;
+                    "
+                >
+
+                    <canvas
+                        id="applicationStatusChart"
+                    ></canvas>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-6">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-header bg-white">
+
+                <h2 class="h5 mb-0">
+                    Open Incidents by Priority
+                </h2>
+
+            </div>
+
+            <div class="card-body">
+
+                <div
+                    style="
+                        position: relative;
+                        height: 320px;
+                    "
+                >
+
+                    <canvas
+                        id="incidentPriorityChart"
+                    ></canvas>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="card shadow-sm">
+
+    <div
+        class="card-header bg-white
+               d-flex justify-content-between
+               align-items-center"
+    >
+
+        <h2 class="h5 mb-0">
+            Recent Incidents
+        </h2>
+
+        <a
+            href="{% url 'incident_list' %}"
+            class="btn btn-sm btn-outline-primary"
+        >
+            View All Incidents
+        </a>
+
+    </div>
+
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table
+                class="table table-hover
+                       align-middle mb-0"
+            >
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Incident
+                        </th>
+
+                        <th>
+                            Application
+                        </th>
+
+                        <th>
+                            Title
+                        </th>
+
+                        <th>
+                            Priority
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            SLA
+                        </th>
+
+                        <th>
+                            Reported
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for incident in recent_incidents %}
+
+                <tr>
+
+                    <td>
+
+                        <a
+                            href="{% url 'incident_detail' incident.pk %}"
+                        >
+                            {{ incident.incident_number }}
+                        </a>
+
+                    </td>
+
+
+                    <td>
+                        {{ incident.application.name }}
+                    </td>
+
+
+                    <td>
+                        {{ incident.title }}
+                    </td>
+
+
+                    <td>
+
+                        {% if incident.priority == "CRITICAL" %}
+
+                        <span class="badge text-bg-danger">
+                            Critical
+                        </span>
+
+                        {% elif incident.priority == "HIGH" %}
+
+                        <span class="badge text-bg-warning">
+                            High
+                        </span>
+
+                        {% elif incident.priority == "MEDIUM" %}
+
+                        <span class="badge text-bg-primary">
+                            Medium
+                        </span>
+
+                        {% else %}
+
+                        <span class="badge text-bg-secondary">
+                            Low
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+                        {{ incident.get_status_display }}
+                    </td>
+
+
+                    <td>
+
+                        {% if incident.sla_status_value == "BREACHED" %}
+
+                        <span class="badge text-bg-danger">
+                            Breached
+                        </span>
+
+                        {% elif incident.sla_status_value == "AT_RISK" %}
+
+                        <span class="badge text-bg-warning">
+                            At Risk
+                        </span>
+
+                        {% else %}
+
+                        <span class="badge text-bg-success">
+                            Within SLA
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+                        {{ incident.reported_at|date:"d M Y H:i" }}
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td
+                        colspan="7"
+                        class="text-center text-secondary"
+                    >
+                        No incidents have been reported.
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{{ application_status_labels|json_script:"application-status-labels" }}
+{{ application_status_data|json_script:"application-status-data" }}
+
+{{ incident_priority_labels|json_script:"incident-priority-labels" }}
+{{ incident_priority_data|json_script:"incident-priority-data" }}
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"
+></script>
+
+
+<script>
+
+    const applicationStatusLabels =
+        JSON.parse(
+            document.getElementById(
+                "application-status-labels"
+            ).textContent
+        );
+
+    const applicationStatusData =
+        JSON.parse(
+            document.getElementById(
+                "application-status-data"
+            ).textContent
+        );
+
+
+    const incidentPriorityLabels =
+        JSON.parse(
+            document.getElementById(
+                "incident-priority-labels"
+            ).textContent
+        );
+
+    const incidentPriorityData =
+        JSON.parse(
+            document.getElementById(
+                "incident-priority-data"
+            ).textContent
+        );
+
+
+    const applicationStatusCanvas =
+        document.getElementById(
+            "applicationStatusChart"
+        );
+
+
+    new Chart(
+        applicationStatusCanvas,
+        {
+            type: "doughnut",
+
+            data: {
+                labels:
+                    applicationStatusLabels,
+
+                datasets: [
+                    {
+                        data:
+                            applicationStatusData,
+
+                        backgroundColor: [
+                            "#198754",
+                            "#ffc107",
+                            "#dc3545",
+                            "#6c757d"
+                        ],
+
+                        borderWidth: 1
+                    }
+                ]
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    legend: {
+                        position: "bottom"
+                    }
+                }
+            }
+        }
+    );
+
+
+    const incidentPriorityCanvas =
+        document.getElementById(
+            "incidentPriorityChart"
+        );
+
+
+    new Chart(
+        incidentPriorityCanvas,
+        {
+            type: "bar",
+
+            data: {
+
+                labels:
+                    incidentPriorityLabels,
+
+                datasets: [
+                    {
+                        label:
+                            "Open Incidents",
+
+                        data:
+                            incidentPriorityData,
+
+                        backgroundColor: [
+                            "#dc3545",
+                            "#fd7e14",
+                            "#0d6efd",
+                            "#6c757d"
+                        ]
+                    }
+                ]
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+
+                plugins: {
+
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        }
+    );
+
+</script>
 
 {% endblock %}

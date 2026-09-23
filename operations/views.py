@@ -42,35 +42,183 @@ from .services.workflow import (
 )
 
 from .services.sla import (
+    BREACHED,
     SLA_LABELS,
     calculate_sla_deadline,
     calculate_sla_progress,
     calculate_sla_status,
     get_sla_target,
 )
-
 from django.db import transaction
 
 @login_required
 def dashboard(request):
 
+    applications = Application.objects.all()
+
+    incidents = (
+        Incident.objects
+        .select_related(
+            "application",
+            "reported_by",
+            "assigned_user",
+        )
+        .all()
+    )
+
+    open_statuses = [
+        Incident.Status.NEW,
+        Incident.Status.ASSIGNED,
+        Incident.Status.IN_PROGRESS,
+    ]
+
+    open_incidents_qs = (
+        incidents.filter(
+            status__in=open_statuses
+        )
+    )
+
+    total_applications = (
+        applications.count()
+    )
+
+    healthy_applications = (
+        applications.filter(
+            status=(
+                Application.Status.HEALTHY
+            )
+        ).count()
+    )
+
+    problem_applications = (
+        applications.filter(
+            status__in=[
+                Application.Status.DEGRADED,
+                Application.Status.DOWN,
+            ]
+        ).count()
+    )
+
+    open_incident_count = (
+        open_incidents_qs.count()
+    )
+
+    critical_incident_count = (
+        open_incidents_qs.filter(
+            priority=(
+                Incident.Priority.CRITICAL
+            )
+        ).count()
+    )
+
+    open_incidents = list(
+        open_incidents_qs
+    )
+
+    sla_breach_count = sum(
+        1
+        for incident in open_incidents
+        if calculate_sla_status(
+            incident
+        ) == BREACHED
+    )
+
+    application_status_labels = [
+        label
+        for value, label
+        in Application.Status.choices
+    ]
+
+    application_status_data = [
+        applications.filter(
+            status=value
+        ).count()
+        for value, label
+        in Application.Status.choices
+    ]
+
+    incident_priority_labels = [
+        label
+        for value, label
+        in Incident.Priority.choices
+    ]
+
+    incident_priority_data = [
+        open_incidents_qs.filter(
+            priority=value
+        ).count()
+        for value, label
+        in Incident.Priority.choices
+    ]
+
+    recent_incidents = list(
+        incidents.order_by(
+            "-reported_at"
+        )[:5]
+    )
+
+    for incident in recent_incidents:
+
+        sla_status = (
+            calculate_sla_status(
+                incident
+            )
+        )
+
+        incident.sla_status_value = (
+            sla_status
+        )
+
+        incident.sla_status_label = (
+            SLA_LABELS[
+                sla_status
+            ]
+        )
+
+    context = {
+        "total_applications":
+            total_applications,
+
+        "healthy_applications":
+            healthy_applications,
+
+        "problem_applications":
+            problem_applications,
+
+        "open_incident_count":
+            open_incident_count,
+
+        "critical_incident_count":
+            critical_incident_count,
+
+        "sla_breach_count":
+            sla_breach_count,
+
+        "application_status_labels":
+            application_status_labels,
+
+        "application_status_data":
+            application_status_data,
+
+        "incident_priority_labels":
+            incident_priority_labels,
+
+        "incident_priority_data":
+            incident_priority_data,
+
+        "recent_incidents":
+            recent_incidents,
+
+        "is_admin":
+            is_administrator(
+                request.user
+            ),
+    }
+
     return render(
         request,
         "operations/dashboard.html",
-        {
-            "is_admin": is_administrator(
-                request.user
-            ),
-        },
-    )
-
-
-@administrator_required
-def administrator_test(request):
-
-    return render(
-        request,
-        "operations/administrator_test.html",
+        context,
     )
 
 
@@ -966,4 +1114,179 @@ def incident_update_create(
             "incident": incident,
             "form": form,
         },
+    )
+
+@login_required
+def dashboard(request):
+
+    applications = Application.objects.all()
+
+    incidents = (
+        Incident.objects
+        .select_related(
+            "application",
+            "reported_by",
+            "assigned_user",
+        )
+        .all()
+    )
+
+    open_statuses = [
+        Incident.Status.NEW,
+        Incident.Status.ASSIGNED,
+        Incident.Status.IN_PROGRESS,
+    ]
+
+    open_incidents_qs = (
+        incidents.filter(
+            status__in=open_statuses
+        )
+    )
+
+    total_applications = (
+        applications.count()
+    )
+
+    healthy_applications = (
+        applications.filter(
+            status=Application.Status.HEALTHY
+        ).count()
+    )
+
+    problem_applications = (
+        applications.filter(
+            status__in=[
+                Application.Status.DEGRADED,
+                Application.Status.DOWN,
+            ]
+        ).count()
+    )
+
+    open_incident_count = (
+        open_incidents_qs.count()
+    )
+
+    critical_incident_count = (
+        open_incidents_qs.filter(
+            priority=Incident.Priority.CRITICAL
+        ).count()
+    )
+
+    open_incidents = list(
+        open_incidents_qs
+    )
+
+    sla_breach_count = sum(
+        1
+        for incident in open_incidents
+        if calculate_sla_status(
+            incident
+        ) == BREACHED
+    )
+
+    application_status_labels = [
+        label
+        for value, label
+        in Application.Status.choices
+    ]
+
+    application_status_data = [
+        applications.filter(
+            status=value
+        ).count()
+        for value, label
+        in Application.Status.choices
+    ]
+
+    incident_priority_labels = [
+        label
+        for value, label
+        in Incident.Priority.choices
+    ]
+
+    incident_priority_data = [
+        open_incidents_qs.filter(
+            priority=value
+        ).count()
+        for value, label
+        in Incident.Priority.choices
+    ]
+
+    recent_incidents = list(
+        incidents.order_by(
+            "-reported_at"
+        )[:5]
+    )
+
+    for incident in recent_incidents:
+
+        sla_status = (
+            calculate_sla_status(
+                incident
+            )
+        )
+
+        incident.sla_status_value = (
+            sla_status
+        )
+
+        incident.sla_status_label = (
+            SLA_LABELS[
+                sla_status
+            ]
+        )
+
+    context = {
+        "total_applications":
+            total_applications,
+
+        "healthy_applications":
+            healthy_applications,
+
+        "problem_applications":
+            problem_applications,
+
+        "open_incident_count":
+            open_incident_count,
+
+        "critical_incident_count":
+            critical_incident_count,
+
+        "sla_breach_count":
+            sla_breach_count,
+
+        "application_status_labels":
+            application_status_labels,
+
+        "application_status_data":
+            application_status_data,
+
+        "incident_priority_labels":
+            incident_priority_labels,
+
+        "incident_priority_data":
+            incident_priority_data,
+
+        "recent_incidents":
+            recent_incidents,
+
+        "is_admin":
+            is_administrator(
+                request.user
+            ),
+    }
+
+    return render(
+        request,
+        "operations/dashboard.html",
+        context,
+    )
+
+
+@administrator_required
+def administrator_test(request):
+
+    return render(
+        request,
+        "operations/administrator_test.html",
     )
