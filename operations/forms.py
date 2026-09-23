@@ -3,6 +3,7 @@ from django import forms
 from .models import (
     Application,
     Incident,
+    IncidentUpdate,
 )
 
 from django.contrib.auth import (
@@ -294,3 +295,38 @@ class IncidentTransitionForm(
                 )
 
         return cleaned_data
+
+class IncidentUpdateForm(
+    forms.ModelForm
+):
+
+    class Meta:
+
+        model = IncidentUpdate
+
+        fields = [
+            "update_text",
+        ]
+
+        labels = {
+            "update_text":
+                "Operational Update",
+        }
+
+        widgets = {
+            "update_text":
+                forms.Textarea(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "rows": 5,
+
+                        "placeholder":
+                            (
+                                "Enter the latest "
+                                "incident update..."
+                            ),
+                    }
+                ),
+        }

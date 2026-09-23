@@ -12,7 +12,6 @@
 >
 
     <div>
-
         <h1>
             {{ incident.incident_number }}
         </h1>
@@ -20,8 +19,8 @@
         <p class="text-secondary">
             {{ incident.title }}
         </p>
-
     </div>
+
 
     <div>
 
@@ -41,6 +40,18 @@
             </a>
 
             {% endif %}
+
+        {% endif %}
+
+
+        {% if can_add_update %}
+
+        <a
+            href="{% url 'incident_update_create' incident.pk %}"
+            class="btn btn-outline-secondary"
+        >
+            Add Update
+        </a>
 
         {% endif %}
 
@@ -209,6 +220,7 @@
 
                 </div>
 
+
                 <div
                     class="progress"
                     style="height: 22px;"
@@ -221,6 +233,7 @@
                     <div
                         class="
                             progress-bar
+                            sla-progress-bar
 
                             {% if sla_status == 'BREACHED' %}
                                 bg-danger
@@ -232,7 +245,7 @@
                                 bg-success
                             {% endif %}
                         "
-                        style="width: {{ sla_progress }}%;"
+                        data-progress="{{ sla_progress }}"
                     >
 
                         {% if sla_progress >= 10 %}
@@ -253,13 +266,9 @@
             <dd class="col-sm-9">
 
                 {% if incident.reported_by %}
-
                     {{ incident.reported_by.username }}
-
                 {% else %}
-
                     Unknown
-
                 {% endif %}
 
             </dd>
@@ -272,13 +281,9 @@
             <dd class="col-sm-9">
 
                 {% if incident.assigned_user %}
-
                     {{ incident.assigned_user.username }}
-
                 {% else %}
-
                     Not assigned
-
                 {% endif %}
 
             </dd>
@@ -347,11 +352,113 @@
 </div>
 
 
+<div class="card shadow-sm mt-4">
+
+    <div class="card-header bg-white">
+
+        <h2 class="h5 mb-0">
+            Incident Timeline
+        </h2>
+
+    </div>
+
+    <div class="card-body">
+
+        {% if updates %}
+
+        <div class="list-group list-group-flush">
+
+            {% for update in updates %}
+
+            <div class="list-group-item px-0">
+
+                <div
+                    class="d-flex justify-content-between
+                           align-items-start mb-2"
+                >
+
+                    <strong>
+
+                        {% if update.user %}
+                            {{ update.user.username }}
+                        {% else %}
+                            Unknown User
+                        {% endif %}
+
+                    </strong>
+
+                    <span class="text-secondary">
+                        {{ update.created_at|date:"d M Y H:i:s" }}
+                    </span>
+
+                </div>
+
+
+                <div>
+                    {{ update.update_text|linebreaksbr }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p class="text-secondary mb-0">
+            No operational updates have been recorded
+            for this incident.
+        </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
 <a
     href="{% url 'incident_list' %}"
     class="btn btn-outline-secondary mt-3"
 >
     Back to Incidents
 </a>
+
+
+<script>
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            const progressBars =
+                document.querySelectorAll(
+                    ".sla-progress-bar"
+                );
+
+            progressBars.forEach(
+                function (bar) {
+
+                    const value =
+                        parseFloat(
+                            bar.dataset.progress
+                        ) || 0;
+
+                    const safeValue =
+                        Math.min(
+                            100,
+                            Math.max(
+                                0,
+                                value
+                            )
+                        );
+
+                    bar.style.width =
+                        safeValue + "%";
+                }
+            );
+        }
+    );
+</script>
 
 {% endblock %}

@@ -189,6 +189,40 @@ class Incident(models.Model):
             f"{self.title}"
         )
 
+class IncidentUpdate(models.Model):
+
+    incident = models.ForeignKey(
+        Incident,
+        on_delete=models.CASCADE,
+        related_name="updates",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="incident_updates",
+    )
+
+    update_text = models.TextField()
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = [
+            "created_at",
+            "id",
+        ]
+
+    def __str__(self):
+
+        return (
+            f"{self.incident.incident_number} "
+            f"- Update {self.pk}"
+        )
+
 
 class AuditLog(models.Model):
 
@@ -222,6 +256,11 @@ class AuditLog(models.Model):
         INCIDENT_STATUS_CHANGED = (
             "INCIDENT_STATUS_CHANGED",
             "Incident Status Changed",
+        )
+
+        INCIDENT_UPDATE_ADDED = (
+            "INCIDENT_UPDATE_ADDED",
+            "Incident Update Added",
         )
 
     user = models.ForeignKey(

@@ -13,6 +13,7 @@ from .forms import (
     IncidentAssignmentForm,
     IncidentCreateForm,
     IncidentTransitionForm,
+    IncidentUpdateForm,
 )
 
 from .models import (
@@ -412,6 +413,20 @@ def incident_detail(
         )
     )
 
+    can_add_update = (
+        can_manage
+        and incident.status
+        != Incident.Status.CLOSED
+    )
+
+    updates = (
+        incident.updates
+        .select_related(
+            "user"
+        )
+        .all()
+    )
+
     sla_target = get_sla_target(
         incident
     )
@@ -435,14 +450,23 @@ def incident_detail(
     )
 
     context = {
-        "incident": incident,
+        "incident":
+            incident,
 
-        "is_admin": is_admin,
+        "is_admin":
+            is_admin,
 
-        "can_manage": can_manage,
+        "can_manage":
+            can_manage,
 
         "can_transition":
             can_transition,
+
+        "can_add_update":
+            can_add_update,
+
+        "updates":
+            updates,
 
         "sla_target_hours":
             int(
@@ -832,5 +856,114 @@ def incident_transition(
         {
             "form": form,
             "incident": incident,
+        },
+    )
+
+@login_required
+def incident_update_create(
+    request,
+    pk,
+):
+
+    incident = get_object_or_404(
+        Incident,
+        pk=pk,
+    )
+
+    if not can_manage_incident(
+        request.user,
+        incident,
+    ):
+
+        raise PermissionDenied
+
+    if (
+        incident.status
+        == Incident.Status.CLOSED
+    ):
+
+        messages.error(
+            request,
+            (
+                "Updates cannot be added "
+                "to a closed incident."
+            ),
+        )
+
+        return redirect(
+            "incident_detail",
+            pk=incident.pk,
+        )
+
+    if request.method == "POST":
+
+        form = IncidentUpdateForm(
+            request.POST
+        )
+
+        if form.is_valid():
+
+            with transaction.atomic():
+
+                update = form.save(
+                    commit=False
+                )
+
+                update.incident = incident
+
+                update.user = (
+                    request.user
+                )
+
+                update.save()
+
+                # Refresh the incident's
+                # last-updated timestamp.
+                incident.save(
+                    update_fields=[
+                        "updated_at",
+                    ]
+                )
+
+                log_action(
+                    user=request.user,
+                    action=(
+                        AuditLog.Action
+                        .INCIDENT_UPDATE_ADDED
+                    ),
+                    application=(
+                        incident.application
+                    ),
+                    incident=incident,
+                    details=(
+                        f"Operational update "
+                        f"added to incident "
+                        f"{incident.incident_number}."
+                    ),
+                )
+
+            messages.success(
+                request,
+                (
+                    "Incident update "
+                    "was added successfully."
+                ),
+            )
+
+            return redirect(
+                "incident_detail",
+                pk=incident.pk,
+            )
+
+    else:
+
+        form = IncidentUpdateForm()
+
+    return render(
+        request,
+        "operations/incident_update_form.html",
+        {
+            "incident": incident,
+            "form": form,
         },
     )

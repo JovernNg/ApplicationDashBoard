@@ -76,4 +76,10 @@ path(
     views.incident_transition,
     name="incident_transition",
 ),
+
+path(
+    "incidents/<int:pk>/updates/new/",
+    views.incident_update_create,
+    name="incident_update_create",
+),
 ]

@@ -4,8 +4,8 @@ from .models import (
     Application,
     AuditLog,
     Incident,
+    IncidentUpdate,
 )
-
 
 @admin.register(Application)
 class ApplicationAdmin(admin.ModelAdmin):
@@ -111,3 +111,51 @@ class AuditLogAdmin(admin.ModelAdmin):
             "reported_at",
             "updated_at",
         ]
+
+@admin.register(IncidentUpdate)
+class IncidentUpdateAdmin(
+    admin.ModelAdmin
+):
+
+    list_display = [
+        "created_at",
+        "incident",
+        "user",
+    ]
+
+    list_filter = [
+        "created_at",
+    ]
+
+    search_fields = [
+        "incident__incident_number",
+        "user__username",
+        "update_text",
+    ]
+
+    readonly_fields = [
+        "incident",
+        "user",
+        "update_text",
+        "created_at",
+    ]
+
+    def has_add_permission(
+        self,
+        request,
+    ):
+        return False
+
+    def has_change_permission(
+        self,
+        request,
+        obj=None,
+    ):
+        return False
+
+    def has_delete_permission(
+        self,
+        request,
+        obj=None,
+    ):
+        return False
