@@ -1190,3 +1190,339 @@ Recent incident SLA status
 Links to detailed incident records
 The dashboard now provides a central operational overview of the system rather than acting only as a navigation page.
 The next milestone will implement incident search and filtering so that users can locate incidents by incident number, title or description and filter records by application, priority, status and assigned user.
+
+# Milestone 9 - Incident Search and Filtering
+
+**Date:** 24 September 2026  
+**Status:** Completed
+
+### Objective
+
+The objective of this milestone was to improve incident management by allowing authenticated users to search and filter incident records efficiently.
+The incident list previously displayed all incidents without any method to narrow down the results.
+This milestone introduced search functionality and multiple filters so users can locate specific incidents or subsets of incidents more quickly.
+
+### Work Completed
+
+Added incident search functionality to the incident list page.
+Configured search to check the following fields:
+Incident number
+Incident title
+Incident description
+Configured the search to be case-insensitive.
+Added filtering by application.
+Added filtering by incident priority.
+Added filtering by incident status.
+Added filtering by assigned user.
+Added support for filtering incidents that are currently unassigned.
+Allowed multiple filters to be combined together.
+Configured the selected search and filter values to remain visible after the form is submitted.
+Added a Clear button to reset all search and filter parameters.
+Added a result count showing the number of incidents matching the current criteria.
+Preserved existing SLA status and SLA deadline information within the filtered incident results.
+Added automated tests for search behaviour, individual filters, combined filters and invalid query-string values.
+
+### Search Behaviour
+The incident search field checks multiple incident attributes using Django Q objects.
+The search checks:
+Incident number
+Title
+Description
+The search uses case-insensitive matching.
+This means a user can enter partial search terms rather than requiring an exact match.
+For example:
+payment
+Payment
+PAYMENT
+can all return incidents containing the same matching text.
+A partial incident number can also be used to locate an incident.
+For example:
+INC-202609
+can match incidents whose generated incident numbers contain that value.
+
+### Search Implementation
+
+The search functionality was implemented using Django ORM Q objects.
+The query combines multiple fields using OR conditions.
+The logic is:
+Incident number contains search term
+OR
+Title contains search term
+OR
+Description contains search term
+This allows one search field to cover multiple incident attributes.
+The use of the Django ORM avoids constructing raw SQL queries manually.
+
+### Application Filtering
+
+An Application dropdown was added to the incident search form.
+The dropdown contains registered applications ordered by application name.
+When an application is selected, only incidents associated with that application are displayed.
+The application identifier is passed through the query string and validated before being applied to the query.
+
+### Priority Filtering
+A Priority dropdown was added.
+The available values are taken directly from the Incident Priority choices defined in the model.
+The available values are:
+Critical
+High
+Medium
+Low
+Only valid priority values are applied to the database query.
+Invalid priority values are ignored rather than causing the incident list page to fail.
+
+### Status Filtering
+
+A Status dropdown was added.
+The filter uses the workflow states defined in the Incident model.
+The available values include:
+New
+Assigned
+In Progress
+Resolved
+Closed
+Only incidents matching the selected status are displayed.
+Invalid status values are ignored safely.
+
+### Assigned User Filtering
+
+An Assigned User dropdown was added.
+Users who are currently assigned to at least one incident are included in the dropdown.
+The list is ordered by username.
+An additional Unassigned option was included.
+Selecting Unassigned displays incidents where the assigned user field is null.
+This allows Administrators and Operations Users to identify incidents that still require assignment.
+
+### Combined Filtering
+
+The search and filter options can be used together.
+For example, a user may search for:
+payment
+while also selecting:
+Application: Payment Portal
+Priority: Critical
+Status: In Progress
+Assigned User: operator1
+The filtering logic applies the selected criteria using AND behaviour.
+This means the incident must satisfy all selected filters.
+The search field itself still uses OR logic internally across incident number, title and description.
+The overall behaviour is therefore:
+Search match
+AND
+Application match
+AND
+Priority match
+AND
+Status match
+AND
+Assigned User match
+
+### Filter State Preservation
+
+After submitting the search form, the current search text and selected filters remain displayed.
+This allows the user to see the criteria responsible for the current result set.
+The selected values are passed back to the template through the view context.
+The incident list template compares the current query-string values with each available dropdown option and marks the matching option as selected.
+
+### Clear Search and Filters
+
+A Clear button was added next to the search submission button.
+The Clear button links directly back to the incident list page without any query parameters.
+This resets:
+Search text
+Application filter
+Priority filter
+Status filter
+Assigned User filter
+The full incident list is then displayed again.
+
+### Result Count
+
+A result counter was added above the incident table.
+The counter displays the number of incidents matching the current search and filter criteria.
+For example:
+1 result
+or
+4 results
+This provides immediate feedback about the effect of the selected filters.
+
+### No Results Behaviour
+
+If no incidents match the current search or filter criteria, the table displays a message instead of remaining empty.
+The message states:
+No incidents match the current search or filters.
+This makes it clear that the system has successfully processed the request but no matching records were found.
+### SLA Integration
+The existing SLA functionality from Milestone 6 was preserved.
+Each incident displayed after search or filtering still contains:
+SLA status
+SLA deadline
+The SLA status is calculated dynamically using the existing SLA service.
+The possible displayed states remain:
+Within SLA
+At Risk
+Breached
+This confirms that introducing search and filtering did not remove or duplicate existing SLA logic.
+
+### Security Considerations
+
+The incident list remains restricted to authenticated users.
+The search and filtering functionality is read-only and does not directly modify incident data.
+Query parameters are processed using the Django ORM.
+Raw SQL queries are not constructed manually.
+Application identifiers and assigned user identifiers are checked before filtering.
+Priority and status values are validated against the defined model choices before being applied.
+Invalid search-filter values are ignored rather than raising an application error.
+This behaviour was tested automatically.
+
+### Data Integrity Considerations
+
+No database schema changes were required for this milestone.
+Search and filtering operate only on existing incident and application data.
+No new database records are created when users search or filter.
+No existing incident records are modified.
+Because no model fields were changed, no database migration was required.
+
+### User Interface Changes
+
+The incident list page was updated with a search and filter panel.
+The panel contains:
+Search field
+Application dropdown
+Priority dropdown
+Status dropdown
+Assigned User dropdown
+Apply Search / Filters button
+Clear button
+The incident results table remains below the filter panel.
+The incident table continues to display:
+Incident number
+Application
+Title
+Priority
+Status
+Assigned user
+SLA status
+SLA deadline
+Reported timestamp
+Incident numbers remain clickable links to the incident detail page.
+Application names remain clickable links to the related application detail page.
+
+### Testing Performed
+
+Automated tests were added for the new search and filtering functionality.
+The following behaviours were tested:
+Search by incident title.
+Search by incident description.
+Search by incident number.
+Filter by application.
+Filter by priority.
+Filter by status.
+Filter by assigned user.
+Filter by unassigned incidents.
+Combined search and filtering.
+Invalid query-string values do not crash the application.
+The Milestone 9 tests were executed using:
+python manage.py test operations.tests.test_search_filter -v 2
+The complete project test suite was executed using:
+python manage.py test
+The tests completed successfully with an OK result.
+
+### Search Test Example
+
+Three incidents were created within the automated test environment.
+One incident represented a Critical payment gateway failure.
+One incident represented a High priority customer login issue.
+One incident represented an unassigned Medium priority payment report delay.
+Searching for:
+gateway
+returned only the payment gateway incident.
+Searching for:
+responding slowly
+returned only the customer login incident.
+This confirmed that title and description searching operated correctly.
+
+### Application Filter Test
+
+The automated test created incidents across two different applications.
+Filtering by Payment Portal returned only incidents associated with the Payment Portal application.
+Incidents associated with the Customer Portal were excluded.
+This confirmed that application filtering used the correct application relationship.
+
+### Assigned User Filter Test
+
+Incidents were assigned to separate operator accounts.
+Filtering by operator1 returned only incidents assigned to operator1.
+Filtering using:
+Unassigned
+returned only incidents where no assigned user existed.
+This confirmed that both normal assignment filtering and null assignment filtering worked correctly.
+
+### Combined Filter Test
+
+A combined test applied the following criteria:
+Search: payment
+Application: Payment Portal
+Priority: Critical
+Status: In Progress
+Assigned User: operator1
+Only the incident matching all selected criteria was returned.
+This confirmed that multiple filters can be used simultaneously.
+
+### Invalid Filter Handling
+
+An automated test supplied invalid values for:
+Application
+Priority
+Status
+Assigned User
+The incident list page still returned HTTP 200.
+The invalid values were ignored rather than causing an exception.
+This improves robustness when users manually modify query-string values in the browser.
+
+### Problems Encountered
+
+No major implementation errors were encountered during this milestone.
+The primary consideration was ensuring that filtering did not remove the SLA data already calculated for the incident list.
+To preserve this behaviour, the filtered QuerySet is evaluated first and then each returned incident is passed through the existing SLA calculation functions.
+The existing SLA status labels and deadline values are attached to the result objects before they are sent to the template.
+Another consideration was preventing malformed query-string values from causing invalid database lookups.
+Numeric application and assigned-user filters are checked before use.
+Priority and status values are checked against the model's available choices.
+This ensured the page continued to load even when invalid values were supplied manually.
+
+### Performance Considerations
+
+Filtering is performed at the database level using Django QuerySets.
+This means the system does not retrieve every incident and then filter the records in Python.
+Application, priority, status and assigned-user conditions are converted into database query conditions.
+Search conditions are also handled by the database.
+The related Application, Reported User and Assigned User records continue to use select_related.
+This reduces unnecessary additional database queries when rendering the incident results table.
+The final result set is converted to a Python list only after database filtering has been applied.
+SLA calculations are then performed only for the incidents that remain in the filtered result set.
+
+### Outcome
+
+Milestone 9 was completed successfully.
+The incident management interface now supports:
+Incident number search
+Incident title search
+Incident description search
+Case-insensitive partial matching
+Application filtering
+Priority filtering
+Status filtering
+Assigned user filtering
+Unassigned incident filtering
+Combined search and filtering
+Filter state preservation
+Search and filter reset
+Result count display
+No-results feedback
+Existing SLA status display
+Existing SLA deadline display
+Automated search and filtering tests
+The incident list is now significantly easier to navigate when the number of incident records increases.
+With Milestone 9 complete, the main planned user-facing functionality is implemented.
+The next milestone will focus on systematic functional testing of the complete application, including authentication, role permissions, application management, incident workflows, SLA boundary behaviour, incident updates and dashboard functionality.

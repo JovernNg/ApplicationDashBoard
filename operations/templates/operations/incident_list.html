@@ -8,6 +8,7 @@ Incidents
 
 {% block content %}
 
+
 <div
     class="d-flex justify-content-between
            align-items-center mb-4"
@@ -19,12 +20,12 @@ Incidents
             Incidents
         </h1>
 
-        <p class="text-secondary">
-            Operational incidents reported
-            against registered applications.
+        <p class="text-secondary mb-0">
+            Search and filter operational incidents.
         </p>
 
     </div>
+
 
     <a
         href="{% url 'incident_create' %}"
@@ -32,6 +33,241 @@ Incidents
     >
         Report Incident
     </a>
+
+</div>
+
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-body">
+
+        <form
+            method="get"
+            action="{% url 'incident_list' %}"
+        >
+
+            <div class="row g-3">
+
+
+                <div class="col-lg-4">
+
+                    <label
+                        for="search"
+                        class="form-label"
+                    >
+                        Search
+                    </label>
+
+                    <input
+                        type="text"
+                        id="search"
+                        name="q"
+                        value="{{ query }}"
+                        class="form-control"
+                        placeholder="Incident number, title or description"
+                    >
+
+                </div>
+
+
+                <div class="col-md-6 col-lg-2">
+
+                    <label
+                        for="application"
+                        class="form-label"
+                    >
+                        Application
+                    </label>
+
+                    <select
+                        id="application"
+                        name="application"
+                        class="form-select"
+                    >
+
+                        <option value="">
+                            All Applications
+                        </option>
+
+                        {% for application in applications %}
+
+                        <option
+                            value="{{ application.pk }}"
+                            {% if application_filter == application.pk|stringformat:"s" %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ application.name }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-6 col-lg-2">
+
+                    <label
+                        for="priority"
+                        class="form-label"
+                    >
+                        Priority
+                    </label>
+
+                    <select
+                        id="priority"
+                        name="priority"
+                        class="form-select"
+                    >
+
+                        <option value="">
+                            All Priorities
+                        </option>
+
+                        {% for value, label in priority_choices %}
+
+                        <option
+                            value="{{ value }}"
+                            {% if priority_filter == value %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ label }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-6 col-lg-2">
+
+                    <label
+                        for="status"
+                        class="form-label"
+                    >
+                        Status
+                    </label>
+
+                    <select
+                        id="status"
+                        name="status"
+                        class="form-select"
+                    >
+
+                        <option value="">
+                            All Statuses
+                        </option>
+
+                        {% for value, label in status_choices %}
+
+                        <option
+                            value="{{ value }}"
+                            {% if status_filter == value %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ label }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="col-md-6 col-lg-2">
+
+                    <label
+                        for="assigned_user"
+                        class="form-label"
+                    >
+                        Assigned User
+                    </label>
+
+                    <select
+                        id="assigned_user"
+                        name="assigned_user"
+                        class="form-select"
+                    >
+
+                        <option value="">
+                            All Users
+                        </option>
+
+                        <option
+                            value="unassigned"
+                            {% if assigned_user_filter == "unassigned" %}
+                                selected
+                            {% endif %}
+                        >
+                            Unassigned
+                        </option>
+
+                        {% for user in assigned_users %}
+
+                        <option
+                            value="{{ user.pk }}"
+                            {% if assigned_user_filter == user.pk|stringformat:"s" %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ user.username }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div class="mt-3">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Apply Search / Filters
+                </button>
+
+
+                <a
+                    href="{% url 'incident_list' %}"
+                    class="btn btn-outline-secondary"
+                >
+                    Clear
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<div
+    class="d-flex justify-content-between
+           align-items-center mb-2"
+>
+
+    <h2 class="h5 mb-0">
+        Incident Results
+    </h2>
+
+    <span class="text-secondary">
+        {{ result_count }}
+        result{{ result_count|pluralize }}
+    </span>
 
 </div>
 
@@ -44,7 +280,7 @@ Incidents
 
             <table
                 class="table table-hover
-                       align-middle"
+                       align-middle mb-0"
             >
 
                 <thead>
@@ -72,6 +308,10 @@ Incidents
                         </th>
 
                         <th>
+                            Assigned To
+                        </th>
+
+                        <th>
                             SLA
                         </th>
 
@@ -87,137 +327,145 @@ Incidents
 
                 </thead>
 
+
                 <tbody>
 
-                {% for incident in incidents %}
+                    {% for incident in incidents %}
 
-                <tr>
+                    <tr>
 
-                    <td>
+                        <td>
 
-                        <a
-                            href="{% url 'incident_detail' incident.pk %}"
+                            <a
+                                href="{% url 'incident_detail' incident.pk %}"
+                            >
+                                {{ incident.incident_number }}
+                            </a>
+
+                        </td>
+
+
+                        <td>
+
+                            <a
+                                href="{% url 'application_detail' incident.application.pk %}"
+                            >
+                                {{ incident.application.name }}
+                            </a>
+
+                        </td>
+
+
+                        <td>
+                            {{ incident.title }}
+                        </td>
+
+
+                        <td>
+
+                            {% if incident.priority == "CRITICAL" %}
+
+                            <span class="badge text-bg-danger">
+                                Critical
+                            </span>
+
+                            {% elif incident.priority == "HIGH" %}
+
+                            <span class="badge text-bg-warning">
+                                High
+                            </span>
+
+                            {% elif incident.priority == "MEDIUM" %}
+
+                            <span class="badge text-bg-primary">
+                                Medium
+                            </span>
+
+                            {% else %}
+
+                            <span class="badge text-bg-secondary">
+                                Low
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+                            {{ incident.get_status_display }}
+                        </td>
+
+
+                        <td>
+
+                            {% if incident.assigned_user %}
+
+                                {{ incident.assigned_user.username }}
+
+                            {% else %}
+
+                                <span class="text-secondary">
+                                    Unassigned
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if incident.sla_status_value == "BREACHED" %}
+
+                            <span class="badge text-bg-danger">
+                                {{ incident.sla_status_label }}
+                            </span>
+
+                            {% elif incident.sla_status_value == "AT_RISK" %}
+
+                            <span class="badge text-bg-warning">
+                                {{ incident.sla_status_label }}
+                            </span>
+
+                            {% else %}
+
+                            <span class="badge text-bg-success">
+                                {{ incident.sla_status_label }}
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+                            {{ incident.sla_deadline_value|date:"d M Y H:i" }}
+                        </td>
+
+
+                        <td>
+                            {{ incident.reported_at|date:"d M Y H:i" }}
+                        </td>
+
+                    </tr>
+
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="9"
+                            class="text-center
+                                   text-secondary py-4"
                         >
-                            {{ incident.incident_number }}
-                        </a>
+                            No incidents match the current search or filters.
+                        </td>
 
-                    </td>
+                    </tr>
 
-
-                    <td>
-                        {{ incident.application.name }}
-                    </td>
-
-
-                    <td>
-                        {{ incident.title }}
-                    </td>
-
-
-                    <td>
-
-                        {% if incident.priority == "CRITICAL" %}
-
-                        <span
-                            class="badge text-bg-danger"
-                        >
-                            Critical
-                        </span>
-
-                        {% elif incident.priority == "HIGH" %}
-
-                        <span
-                            class="badge text-bg-warning"
-                        >
-                            High
-                        </span>
-
-                        {% elif incident.priority == "MEDIUM" %}
-
-                        <span
-                            class="badge text-bg-primary"
-                        >
-                            Medium
-                        </span>
-
-                        {% else %}
-
-                        <span
-                            class="badge text-bg-secondary"
-                        >
-                            Low
-                        </span>
-
-                        {% endif %}
-
-                    </td>
-
-
-                    <td>
-                        {{ incident.get_status_display }}
-                    </td>
-
-
-                    <td>
-
-                        {% if incident.sla_status_value == "BREACHED" %}
-
-                        <span
-                            class="badge text-bg-danger"
-                        >
-                            Breached
-                        </span>
-
-                        {% elif incident.sla_status_value == "AT_RISK" %}
-
-                        <span
-                            class="badge text-bg-warning"
-                        >
-                            At Risk
-                        </span>
-
-                        {% else %}
-
-                        <span
-                            class="badge text-bg-success"
-                        >
-                            Within SLA
-                        </span>
-
-                        {% endif %}
-
-                    </td>
-
-
-                    <td>
-
-                        {{ incident.sla_deadline_value|date:"d M Y H:i" }}
-
-                    </td>
-
-
-                    <td>
-
-                        {{ incident.reported_at|date:"d M Y H:i" }}
-
-                    </td>
-
-                </tr>
-
-                {% empty %}
-
-                <tr>
-
-                    <td
-                        colspan="8"
-                        class="text-center text-secondary"
-                    >
-                        No incidents have been reported.
-                    </td>
-
-                </tr>
-
-                {% endfor %}
+                    {% endfor %}
 
                 </tbody>
 
@@ -228,5 +476,6 @@ Incidents
     </div>
 
 </div>
+
 
 {% endblock %}

@@ -1,3 +1,6 @@
+from django.contrib.auth.models import User
+from django.db.models import Q
+
 from django.contrib import messages
 from django.contrib.auth.decorators import (
     login_required,
@@ -477,7 +480,7 @@ def audit_log_list(request):
 @login_required
 def incident_list(request):
 
-    incidents = list(
+    incidents = (
         Incident.objects
         .select_related(
             "application",
@@ -487,7 +490,130 @@ def incident_list(request):
         .all()
     )
 
-    for incident in incidents:
+    query = (
+        request.GET
+        .get("q", "")
+        .strip()
+    )
+
+    application_filter = (
+        request.GET
+        .get("application", "")
+        .strip()
+    )
+
+    priority_filter = (
+        request.GET
+        .get("priority", "")
+        .strip()
+    )
+
+    status_filter = (
+        request.GET
+        .get("status", "")
+        .strip()
+    )
+
+    assigned_user_filter = (
+        request.GET
+        .get("assigned_user", "")
+        .strip()
+    )
+
+
+    # Search by incident number,
+    # title or description.
+    if query:
+
+        incidents = incidents.filter(
+
+            Q(
+                incident_number__icontains=query
+            )
+
+            |
+
+            Q(
+                title__icontains=query
+            )
+
+            |
+
+            Q(
+                description__icontains=query
+            )
+
+        )
+
+
+    # Application filter.
+    if application_filter.isdigit():
+
+        incidents = incidents.filter(
+            application_id=int(
+                application_filter
+            )
+        )
+
+
+    # Priority filter.
+    valid_priorities = {
+        value
+        for value, label
+        in Incident.Priority.choices
+    }
+
+    if priority_filter in valid_priorities:
+
+        incidents = incidents.filter(
+            priority=priority_filter
+        )
+
+
+    # Status filter.
+    valid_statuses = {
+        value
+        for value, label
+        in Incident.Status.choices
+    }
+
+    if status_filter in valid_statuses:
+
+        incidents = incidents.filter(
+            status=status_filter
+        )
+
+
+    # Assigned user filter.
+    if assigned_user_filter == "unassigned":
+
+        incidents = incidents.filter(
+            assigned_user__isnull=True
+        )
+
+    elif assigned_user_filter.isdigit():
+
+        incidents = incidents.filter(
+            assigned_user_id=int(
+                assigned_user_filter
+            )
+        )
+
+
+    incidents = incidents.order_by(
+        "-reported_at",
+        "-id",
+    )
+
+
+    # Convert to a list before adding
+    # calculated SLA information.
+    incident_rows = list(
+        incidents
+    )
+
+
+    for incident in incident_rows:
 
         sla_status = (
             calculate_sla_status(
@@ -511,12 +637,66 @@ def incident_list(request):
             )
         )
 
+
+    applications = (
+        Application.objects
+        .order_by("name")
+    )
+
+
+    assigned_users = (
+        User.objects
+        .filter(
+            assigned_incidents__isnull=False
+        )
+        .distinct()
+        .order_by("username")
+    )
+
+
+    context = {
+
+        "incidents":
+            incident_rows,
+
+        "applications":
+            applications,
+
+        "priority_choices":
+            Incident.Priority.choices,
+
+        "status_choices":
+            Incident.Status.choices,
+
+        "assigned_users":
+            assigned_users,
+
+        "query":
+            query,
+
+        "application_filter":
+            application_filter,
+
+        "priority_filter":
+            priority_filter,
+
+        "status_filter":
+            status_filter,
+
+        "assigned_user_filter":
+            assigned_user_filter,
+
+        "result_count":
+            len(
+                incident_rows
+            ),
+    }
+
+
     return render(
         request,
         "operations/incident_list.html",
-        {
-            "incidents": incidents,
-        },
+        context,
     )
 
 @login_required
