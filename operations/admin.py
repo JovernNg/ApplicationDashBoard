@@ -7,13 +7,40 @@ from .models import (
     IncidentUpdate,
 )
 
+
+class ReadOnlyAdminMixin:
+
+    def has_add_permission(
+        self,
+        request,
+    ):
+        return False
+
+    def has_change_permission(
+        self,
+        request,
+        obj=None,
+    ):
+        return False
+
+    def has_delete_permission(
+        self,
+        request,
+        obj=None,
+    ):
+        return False
+
+
 @admin.register(Application)
-class ApplicationAdmin(admin.ModelAdmin):
+class ApplicationAdmin(
+    ReadOnlyAdminMixin,
+    admin.ModelAdmin,
+):
 
     list_display = [
         "name",
-        "environment",
         "owner",
+        "environment",
         "status",
         "availability_percentage",
         "updated_at",
@@ -31,90 +58,39 @@ class ApplicationAdmin(admin.ModelAdmin):
     ]
 
 
-@admin.register(AuditLog)
-class AuditLogAdmin(admin.ModelAdmin):
+@admin.register(Incident)
+class IncidentAdmin(
+    ReadOnlyAdminMixin,
+    admin.ModelAdmin,
+):
 
     list_display = [
-        "created_at",
-        "user",
-        "action",
+        "incident_number",
         "application",
+        "title",
+        "priority",
+        "status",
+        "assigned_user",
+        "reported_at",
     ]
 
     list_filter = [
-        "action",
-        "created_at",
+        "priority",
+        "status",
+        "application",
     ]
 
     search_fields = [
-        "user__username",
-        "application__name",
-        "details",
+        "incident_number",
+        "title",
+        "description",
     ]
 
-    readonly_fields = [
-        "user",
-        "application",
-        "action",
-        "details",
-        "created_at",
-    ]
-
-    def has_add_permission(
-        self,
-        request,
-    ):
-        return False
-
-    def has_delete_permission(
-        self,
-        request,
-        obj=None,
-    ):
-        return False
-
-    def has_change_permission(
-        self,
-        request,
-        obj=None,
-    ):
-        return False
-
-    @admin.register(Incident)
-    class IncidentAdmin(admin.ModelAdmin):
-
-        list_display = [
-            "incident_number",
-            "application",
-            "title",
-            "priority",
-            "status",
-            "reported_by",
-            "reported_at",
-        ]
-
-        list_filter = [
-            "priority",
-            "status",
-            "application",
-       ]
-
-        search_fields = [
-            "incident_number",
-            "title",
-            "description",
-            "application__name",
-        ]
-
-        readonly_fields = [
-            "incident_number",
-            "reported_at",
-            "updated_at",
-        ]
 
 @admin.register(IncidentUpdate)
 class IncidentUpdateAdmin(
-    admin.ModelAdmin
+    ReadOnlyAdminMixin,
+    admin.ModelAdmin,
 ):
 
     list_display = [
@@ -123,39 +99,35 @@ class IncidentUpdateAdmin(
         "user",
     ]
 
-    list_filter = [
-        "created_at",
-    ]
-
     search_fields = [
         "incident__incident_number",
         "user__username",
         "update_text",
     ]
 
-    readonly_fields = [
-        "incident",
+
+@admin.register(AuditLog)
+class AuditLogAdmin(
+    ReadOnlyAdminMixin,
+    admin.ModelAdmin,
+):
+
+    list_display = [
+        "created_at",
         "user",
-        "update_text",
+        "action",
+        "application",
+        "incident",
+    ]
+
+    list_filter = [
+        "action",
         "created_at",
     ]
 
-    def has_add_permission(
-        self,
-        request,
-    ):
-        return False
-
-    def has_change_permission(
-        self,
-        request,
-        obj=None,
-    ):
-        return False
-
-    def has_delete_permission(
-        self,
-        request,
-        obj=None,
-    ):
-        return False
+    search_fields = [
+        "details",
+        "application__name",
+        "incident__incident_number",
+        "user__username",
+    ]
