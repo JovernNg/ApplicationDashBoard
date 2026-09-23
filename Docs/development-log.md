@@ -20,7 +20,7 @@ None.
 
 The project will use a single Django application called `operations`
 
-### Milestone 1 - Project Setup, Authentication and Role-Based Access
+# Milestone 1 - Project Setup, Authentication and Role-Based Access
 
 Date: 22 September 2026
 Status: Completed
@@ -105,7 +105,7 @@ Milestone 1 was completed successfully.
 The project now has a working Django foundation with user authentication, login and logout, Administrator and Operations User roles, server-side role-based access control, protected pages, and automated authentication and permission tests.
 This provides the access-control foundation required for later application and incident management functions.
 
-### Milestone 2 - Application Management
+# Milestone 2 - Application Management
 
 Date: 22 September 2026
 Status: Completed
@@ -199,7 +199,7 @@ Milestone 2 was completed successfully.
 The system now provides a functional application register with persistent application records, application status tracking, availability values, application list and detail pages, Administrator-only creation and editing, read-only Operations User access, input validation, role-based protection, improved interface readability and automated application permission tests.
 The application management functionality provides the foundation required for incidents to be associated with individual applications in the next development stages.
 
-### Milestone 3 - Audit Trail
+# Milestone 3 - Audit Trail
 
 Date: 22 September 2026
 Status: Completed
@@ -290,7 +290,7 @@ The system now provides an audit trail that records important application manage
 Administrators can review audit records through a dedicated audit log page, while Operations Users are prevented from accessing the audit trail.
 The audit logging structure can now be extended in later milestones to record incident creation, incident assignment, workflow transitions, resolution activities and other operational actions.
 
-### Milestone 4 - Incident Management
+# Milestone 4 - Incident Management
 
 Date: 22 September 2026
 Status: Completed
@@ -454,7 +454,7 @@ The next stage will implement the permitted incident lifecycle:
 New → Assigned → In Progress → Resolved → Closed
 Milestone 5 will also enforce valid transitions, assignment requirements and resolution requirements rather than allowing incident states to be changed freely.
 
-### Milestone 5 - Controlled Incident Workflow
+# Milestone 5 - Controlled Incident Workflow
 Date: 23 September 2026
 Status: Completed
 
@@ -621,7 +621,7 @@ Automated workflow tests
 The incident management functionality now enforces business rules rather than allowing unrestricted status changes.
 The next milestone will implement the SLA engine, including priority-based SLA targets, deadline calculation, At Risk thresholds and SLA breach detection.
 
-### Milestone 6 - SLA Engine
+# Milestone 6 - SLA Engine
 Date: 23 September 2026
 Status: Completed
 
@@ -801,7 +801,7 @@ Automated SLA boundary tests
 The SLA engine now provides the logic required for dashboard breach counts and future SLA-focused reporting.
 The next milestone will implement the incident update timeline so that users can record chronological operational updates against an incident.
 
-### Milestone 7 - Incident Updates and Timeline
+# Milestone 7 - Incident Updates and Timeline
 Date: 23 September 2026
 Status: Completed
 
@@ -987,7 +987,7 @@ Automated incident update tests
 The incident module now provides both the current operational state and a chronological record of investigation and remediation activity.
 The next milestone will implement the dashboard analytics functionality, including application health statistics, open incident counts, critical incident counts, SLA breach counts, recent incidents and visual charts.
 
-### Milestone 8 - Dashboard Analytics
+# Milestone 8 - Dashboard Analytics
 
 Date: 23 September 2026
 Status: Completed
@@ -1889,3 +1889,746 @@ Relevant testing screenshots are captured.
 Any defects discovered during manual testing are corrected and retested.
 Once these conditions are satisfied, the project can proceed to Milestone 11.
 The next milestone will focus on Security and Object-Level Authorization Testing, including deliberate attempts to bypass authentication and authorization controls, CSRF protection, XSS handling, SQL-injection-style input, session behaviour, direct URL manipulation and administrative bypass risks.
+
+# Milestone 11 - Security and Object-Level Authorization Testing
+
+**Date:** 24 September 2026
+**Status:** Completed
+
+### Objective
+
+The objective of Milestone 11 was to evaluate the security controls implemented within the Application Operations and Incident Management Dashboard.
+Unlike earlier milestones, the focus was not on adding new operational functionality.
+The purpose was to deliberately attempt to bypass authentication, authorization and workflow controls and verify that the server rejected unauthorised behaviour.
+The testing focused on:
+Authentication enforcement
+Role-based authorization
+Object-level authorization
+Direct URL manipulation
+Cross-Site Request Forgery protection
+Cross-Site Scripting handling
+SQL-injection-style input
+POST parameter tampering
+Session invalidation
+Closed incident protection
+Administrative interface hardening
+Security regression testing
+OWASP ZAP preparation and analysis
+Django deployment security checks
+
+
+### Work Completed
+
+Created a dedicated automated security test module:
+operations/tests/test_security.py
+Added automated tests covering authentication, authorization and common web application security controls.
+Tested anonymous access to protected pages.
+Tested Operations User access to Administrator-only functions.
+Tested direct URL manipulation.
+Tested object-level authorization between separate Operations Users.
+Tested CSRF protection using Django's test client with CSRF enforcement enabled.
+Tested stored XSS-style input within incident timeline records.
+Tested SQL-injection-style search input.
+Tested session invalidation after logout.
+Tested protected field tampering during incident creation.
+Tested attempts to modify Closed incidents.
+Reviewed the Django administrative interface as a potential workflow bypass.
+Hardened Django Admin so operational records are read-only.
+Prepared a security testing evidence document:
+docs/security-test-results.md
+Prepared OWASP ZAP testing activities for the local application.
+Used Django's deployment security checker to identify production-hardening considerations.
+
+### Django Admin Hardening
+
+A security concern was identified with the default Django Admin interface.
+Although the normal application interface enforced controlled workflows and audit logging, a Django superuser could potentially modify application or incident records directly through Django Admin.
+This could bypass:
+Incident transition rules
+Assignment restrictions
+Resolution requirements
+Audit behaviour
+Application management controls
+To reduce this risk, the administrative interface was configured as read-only for operational domain models.
+A reusable ReadOnlyAdminMixin was introduced.
+The following operations were disabled through Django Admin:
+Add
+Change
+Delete
+for:
+Application
+Incident
+IncidentUpdate
+AuditLog
+The administrative interface remains available for inspection and debugging, but operational modifications must go through the normal application views.
+This preserves the workflow and audit controls implemented within the main system.
+
+### Authentication Testing
+
+Protected pages were accessed without an authenticated session.
+The tested pages included:
+Dashboard
+Application List
+Incident List
+Incident Detail
+The expected behaviour was redirection to the login page.
+This confirmed that unauthenticated users cannot directly access the main operational interface.
+
+
+### Role-Based Authorization Testing
+
+An authenticated Operations User attempted to access Administrator-only functionality.
+The tested functionality included:
+Application creation
+Application editing
+Audit Log viewing
+The expected result was:
+HTTP 403 Forbidden
+This confirmed that authentication alone does not provide Administrator privileges.
+
+### Object-Level Authorization Testing
+
+Two different Operations User accounts were used.
+An incident was assigned to Operations User 1.
+Operations User 2 then attempted to access:
+Incident status transition
+Incident update creation
+using direct URLs.
+The expected response was:
+HTTP 403 Forbidden
+This demonstrated that authorization is enforced against the specific incident object rather than relying only on whether the user is authenticated.
+The test also confirmed that hiding interface buttons is not the primary security mechanism.
+The server itself rejects the unauthorised request.
+
+### Direct URL Manipulation
+
+Protected application and incident URLs were entered directly rather than accessed through visible interface controls.
+Examples included:
+Application creation URL
+Application editing URL
+Audit Log URL
+Incident transition URL
+Incident update URL
+The expected behaviour was determined by the current user's role and relationship to the requested object.
+Unauthorized requests returned HTTP 403.
+This verified that users cannot bypass interface restrictions by manually constructing application URLs.
+
+### CSRF Testing
+
+Cross-Site Request Forgery protection was tested using Django's test client with:
+enforce_csrf_checks=True
+An authenticated request attempted to submit an incident update using POST without a valid CSRF token.
+The expected result was:
+HTTP 403 Forbidden
+The database was then checked to verify that the attempted incident update was not created.
+This demonstrated that state-changing requests are protected by Django's CSRF controls.
+
+### XSS Testing
+
+A stored script-style payload was inserted into an incident timeline update.
+The payload used during testing was similar to:
+<script>alert('xss')</script>
+The incident detail page was then rendered.
+The raw script was expected not to appear as executable markup.
+Instead, HTML special characters should be escaped.
+For example:
+<script>
+is rendered as escaped text beginning with:
+&lt;script&gt;
+This verifies the tested timeline rendering path retains Django's automatic HTML escaping.
+No browser script should execute from the stored update text.
+This test demonstrates protection against the tested stored XSS payload within the incident timeline.
+It does not claim that every possible XSS attack vector has been eliminated.
+
+### SQL-Injection-Style Search Testing
+
+Injection-style text was submitted through the incident search functionality.
+An example payload was:
+' OR 1=1 --
+The expected result was that the text would be treated as an ordinary search term.
+The request should:
+Return HTTP 200
+Not produce a database error
+Not return all records because of manipulated SQL logic
+The application uses Django ORM filtering rather than manually concatenating SQL statements.
+The tested malicious-looking input was handled as search data.
+This test does not prove the absence of every possible SQL injection vulnerability.
+It demonstrates that the tested search path did not exhibit successful SQL injection behaviour.
+
+### POST Parameter Tampering
+
+Incident creation was tested using additional POST parameters that are not exposed by the normal IncidentCreateForm.
+Attempted protected values included:
+status=CLOSED
+assigned_user=<different user>
+reported_by=<different user>
+The expected behaviour was that these parameters would not control the protected incident properties.
+After creation:
+Status remained New
+Assigned User remained empty
+Reported By remained the currently authenticated user
+This confirmed that important workflow properties are controlled by server-side application logic rather than being trusted from submitted form data.
+
+### Session Testing
+
+An Operations User logged into the system and successfully accessed a protected page.
+The user then logged out.
+The same protected page was requested again.
+The expected result was redirection to the login page.
+This confirmed that the authenticated session was no longer accepted after logout.
+
+### Closed Incident Protection
+
+A Closed incident was targeted using a direct POST request to the incident update endpoint.
+The attempted update was expected to be rejected.
+The test also verified that no IncidentUpdate record was created.
+This confirms that Closed incidents remain protected even when a user manually submits a request instead of relying on the interface.
+
+### Administrative Interface Security Testing
+
+A Django superuser attempted to modify operational records through Django Admin.
+The tested objects included:
+Incident
+Application
+Because the Admin interface was configured as read-only, the modification attempt was expected to be rejected.
+The database record was checked afterwards to confirm that the original values remained unchanged.
+This closes a potential alternative path that could otherwise bypass normal workflow and audit rules.
+
+
+### Automated Security Test Suite
+
+A dedicated security test suite was implemented.
+The automated tests cover:
+Anonymous access
+Administrator-only URL restrictions
+Object-level permissions
+CSRF enforcement
+Stored XSS escaping
+SQL-injection-style search input
+Logout/session invalidation
+Protected field tampering
+Closed incident protection
+Django Admin workflow bypass attempts
+The security suite was executed using:
+python manage.py test operations.tests.test_security -v 2
+The complete regression suite was then executed using:
+python manage.py test
+Milestone 11 should only be considered complete where both the dedicated security suite and complete regression suite return:
+OK
+
+### OWASP ZAP Testing
+
+OWASP ZAP was identified as the external dynamic security testing tool for the project.
+The locally hosted application was used as the intended target:
+http://127.0.0.1:8000/
+The planned ZAP process included:
+Launching the application locally
+Opening the application through the ZAP browser
+Authenticating normally
+Navigating through the main application pages
+Allowing ZAP to perform passive analysis
+Reviewing generated alerts
+Performing an Active Scan against the local development application
+Recording findings by:
+Alert name
+Risk level
+Affected URL
+Description
+Applicability to the prototype
+Corrective action where required
+ZAP findings should be interpreted rather than automatically treated as confirmed vulnerabilities.
+Development-environment warnings relating to HTTP, secure cookies or HTTPS configuration may reflect local deployment conditions rather than defects in application workflow code.
+
+### Django Deployment Security Check
+
+The following command was included as part of the security evaluation:
+python manage.py check --deploy
+This command performs additional checks for settings recommended for production deployment.
+Potential warnings may include:
+DEBUG configuration
+HTTPS configuration
+Secure cookie settings
+HTTP Strict Transport Security
+SECRET_KEY handling
+These warnings should be recorded and interpreted in the context of the project being evaluated in a local development environment.
+Development settings should not be changed blindly only to remove warnings.
+The findings instead provide evidence of production deployment considerations and limitations.
+
+### Security Evidence
+
+A security testing evidence document was created:
+docs/security-test-results.md
+The document includes test cases covering:
+Authentication
+Authorization
+Object-level authorization
+CSRF
+XSS
+SQL-injection-style input
+Session behaviour
+Parameter tampering
+Closed incident protection
+Administrative interface hardening
+OWASP ZAP
+The document provides fields for:
+Expected result
+Actual result
+Pass or fail status
+This allows security evaluation results to be recorded systematically for use in the final report.
+
+### Security Testing Limitations
+
+The security evaluation is designed to test defined controls within the developed prototype.
+The results should not be interpreted as proof that the application is completely free from vulnerabilities.
+Automated tests verify specific attack scenarios.
+OWASP ZAP provides additional dynamic analysis but may produce false positives or environment-related findings.
+The project therefore reports observed results within the tested environment rather than making absolute security claims.
+
+### Problems Encountered
+
+A potential design weakness was identified in the Django Admin interface.
+The application workflow enforced controlled incident transitions and application auditing, but the default administrative interface could provide a separate route for superusers to modify records directly.
+The issue was addressed by making the operational domain objects read-only through Django Admin.
+This ensured that normal system modifications continue to pass through the controlled application views.
+No database migration was required because the change affected administrative behaviour rather than the database schema.
+
+### Outcome
+
+Milestone 11 completed the main security and authorization testing stage of the project.
+The application now has evidence covering:
+Authentication enforcement
+Role-based access control
+Object-level authorization
+Direct URL protection
+CSRF enforcement
+Stored XSS escaping
+SQL-injection-style search handling
+Session invalidation
+POST parameter tampering protection
+Closed incident protection
+Read-only Django Admin operational records
+Security regression testing
+OWASP ZAP evaluation preparation
+Django deployment security considerations
+The next milestone focuses on measuring system performance and evaluating usability with representative user tasks.
+
+
+
+# Milestone 12 - Performance and Usability Evaluation
+
+**Date:** 24 September 2026
+**Status:** Evaluation framework implemented; final completion requires recorded performance measurements and usability participant results
+
+### Objective
+
+The objective of Milestone 12 was to evaluate the developed system in two areas:
+Performance
+Usability
+The performance evaluation is designed to determine whether the main application pages meet the defined local response-time target.
+The usability evaluation is designed to determine whether users can complete common operational tasks successfully and understand the interface.
+This milestone is primarily an evaluation and evidence-collection milestone rather than a feature-development milestone.
+
+### Performance Requirement
+
+The defined project performance target is:
+Main application pages should respond in less than 2 seconds within the controlled local test environment.
+The evaluation focuses on the following pages:
+Dashboard
+Application List
+Application Detail
+Incident List
+Incident Detail
+
+### Performance Testing Implementation
+
+A custom Django management command was prepared:
+operations/management/commands/measure_performance.py
+The command uses Django's test client to make authenticated requests to the main application pages.
+The command accepts:
+Username
+Number of measured requests
+The user password is requested securely at runtime and is not stored in the command.
+The performance test is executed using:
+python manage.py measure_performance --username operator1 --runs 5
+One unrecorded warm-up request is performed for each page.
+Five subsequent requests are measured.
+The command uses:
+time.perf_counter()
+to provide high-resolution timing measurements.
+
+### Performance Measurements
+
+For each tested page, the command calculates:
+Individual request times
+Average response time
+Median response time
+Minimum response time
+Maximum response time
+The page is assessed against the defined:
+2000 ms
+local response-time target.
+A page receives a PASS result where its maximum recorded measured request remains below the target.
+The actual measured values must be recorded from the local test environment and should not be replaced with example values.
+
+### Performance Test Method
+
+The performance test uses a controlled local environment.
+The main environment consists of:
+Operating System:
+Windows
+Python:
+3.14.5
+Django:
+5.2.17
+Database:
+SQLite
+Server/Test Mechanism:
+Django development environment and Django test client
+The measurements focus primarily on server-side response generation.
+They do not represent production internet performance.
+
+### Performance Evidence Document
+
+A performance evidence document was prepared:
+docs/performance-test-results.md
+The document includes a table for recording:
+Run 1
+Run 2
+Run 3
+Run 4
+Run 5
+Average
+Median
+Maximum
+Result
+for each of the major pages.
+The document also records:
+Test environment
+Performance target
+Measurement methodology
+Limitations
+Overall result
+
+### Performance Evaluation Limitations
+
+The Django test-client measurements primarily assess application-side request processing.
+They do not fully include:
+Internet latency
+Public network conditions
+Production server load
+Large-scale concurrent users
+External browser resource loading
+JavaScript execution time
+Chart.js retrieval and rendering
+The results therefore represent controlled prototype performance rather than production capacity.
+This distinction should be stated clearly in the final report.
+
+### Browser-Side Performance Evidence
+
+Browser developer tools may also be used to supplement the automated measurements.
+The Network panel can be used to observe page request timings while loading:
+Dashboard
+Incident List
+Incident Detail
+This provides additional browser-side evidence but should be distinguished from the automated server-side performance measurement.
+
+### Usability Evaluation Objective
+
+The usability evaluation is designed to assess whether users can complete realistic operational tasks using the system.
+The evaluation measures:
+Task completion
+Task completion time
+Errors or incorrect navigation
+Assistance required
+Participant comments
+Observer comments
+System Usability Scale score
+
+### Usability Participants
+
+The planned usability evaluation uses:
+3 to 5 volunteer participants
+The evaluation is intentionally small and formative.
+Participants should be identified using anonymous identifiers such as:
+P1
+P2
+P3
+P4
+P5
+
+Participant names should not be included in the evaluation results table.
+Any required university ethics or participant approval should be confirmed before collecting participant data.
+
+### Usability Test Plan
+
+A usability test plan was prepared:
+docs/usability-test-plan.md
+The test plan defines seven operational tasks.
+These tasks represent common actions that users would perform when working with the system.
+
+### Usability Task UT-01 - Login
+
+The participant is asked to log into the system using a supplied account.
+Success condition:
+The Dashboard is displayed.
+
+### Usability Task UT-02 - Identify Operational Status
+
+The participant is asked to use the Dashboard to identify:
+Number of open incidents
+Number of Critical incidents
+Success condition:
+The participant correctly identifies both values.
+
+### Usability Task UT-03 - Find an Incident
+
+The participant is asked to locate a specified incident using the available search and filtering functionality.
+Success condition:
+The participant reaches the correct Incident Detail page.
+
+### Usability Task UT-04 - Report an Incident
+
+The participant is asked to create a new incident using supplied:
+Application
+Title
+Description
+Priority
+Success condition:
+The incident is successfully created in New status.
+
+### Usability Task UT-05 - Review SLA Information
+
+The participant is asked to inspect an incident and identify:
+Priority
+Current status
+SLA deadline
+SLA state
+Success condition:
+The requested information is correctly identified.
+
+### Usability Task UT-06 - Add Operational Update
+
+The participant is asked to add a supplied update to an incident assigned to their account.
+Success condition:
+The update appears in the Incident Timeline.
+
+### Usability Task UT-07 - Update Incident Status
+
+The participant is asked to move an assigned incident from:
+Assigned
+to:
+In Progress
+Success condition:
+The incident status changes successfully.
+
+### Usability Evaluation Method
+
+Participants should receive task goals rather than step-by-step interface instructions.
+For example, a participant may be told:
+Locate the specified incident and open its details.
+They should not normally be told:
+Click Incidents, use the search box, then click this link.
+This allows the evaluation to identify whether the interface itself is understandable.
+If the participant cannot continue and assistance is provided, the assistance must be recorded.
+
+### Usability Measurements
+
+For each participant and task, the following should be recorded:
+Successful completion
+Completion time
+Errors
+Incorrect navigation
+Assistance required
+Participant comments
+Observer comments
+These measurements allow both quantitative and qualitative evaluation.
+
+### Usability Results Document
+
+A results document was prepared:
+docs/usability-test-results.md
+The document contains:
+Participant/task result table
+Task summary table
+Success rates
+Average task times
+System Usability Scale results
+Participant feedback
+Observed usability issues
+Changes made following evaluation
+Evaluation limitations
+
+### System Usability Scale
+
+The standard 10-item System Usability Scale was selected as the post-test questionnaire.
+Participants respond using a five-point scale:
+1 = Strongly Disagree
+2 = Disagree
+3 = Neutral
+4 = Agree
+5 = Strongly Agree
+The questionnaire contains alternating positive and negative usability statements.
+
+### SUS Scoring Method
+
+For positively worded odd-numbered questions:
+1
+3
+5
+7
+9
+the adjusted value is:
+response - 1
+For negatively worded even-numbered questions:
+2
+4
+6
+8
+10
+the adjusted value is:
+5 - response
+The adjusted values are summed.
+The total is then multiplied by:
+2.5
+This produces a SUS score between:
+0 and 100
+The SUS result is a score on a 0 to 100 scale and should not be described as a percentage.
+
+### Mean SUS Score
+
+Each participant receives an individual SUS score.
+The overall mean is calculated as:
+Sum of participant SUS scores
+divided by
+Number of participants
+This provides a summary measure of perceived usability for the small evaluation group.
+
+### Task Success Rate
+
+Task success rate is calculated using:
+Successful participants
+divided by
+Participants attempting the task
+multiplied by
+100
+For example:
+3 successful participants
+out of
+4 participants
+produces:
+75 percent task success
+The method used for failed attempts and timing should be documented consistently.
+
+### Evaluation Dataset
+
+A stable usability dataset should be prepared before participant testing.
+Example applications include:
+Payment Portal
+Customer Portal
+Reporting Service
+Example incident states should include:
+Critical Assigned incident
+High New incident
+Medium In Progress incident
+Resolved incident
+Closed incident
+The environment should be reset where necessary between participants so that later participants are not affected by actions completed by earlier participants.
+
+### Participant Coaching Control
+
+Participants should not receive detailed navigation instructions unless assistance becomes necessary.
+The objective is to evaluate the interface rather than the participant.
+Any assistance should be recorded.
+This supports more defensible usability observations.
+
+### Ethics and Privacy Considerations
+
+Participants should be identified using anonymous identifiers rather than names.
+Only information necessary for the usability evaluation should be recorded.
+The usability test should proceed only after any required academic ethics or participant approval has been confirmed.
+Participant evaluation data should be used only for the intended project evaluation purpose.
+
+### Usability Evaluation Limitations
+
+The planned sample consists of only:
+3 to 5 participants
+The results therefore should not be treated as statistically representative of all possible users.
+The evaluation should be described as:
+A small formative usability evaluation
+The purpose is to identify usability problems and provide preliminary evidence about whether the prototype can be used effectively.
+The results should not be generalised to a large population.
+
+### Regression Testing
+
+If usability evaluation identifies a genuine interface defect and a corrective change is implemented, the complete automated regression suite should be rerun using:
+python manage.py test
+The expected result remains:
+OK
+This ensures that usability-driven changes do not break existing functionality.
+
+### Development Approach During Milestone 12
+
+Milestone 12 represents a transition from implementation to evaluation.
+New features should generally not be introduced during this stage.
+Changes should normally be limited to:
+Defect corrections
+Minor usability improvements supported by evaluation evidence
+Performance corrections where the defined requirement is not met
+Any resulting modification should be documented and followed by regression testing.
+
+### Problems Encountered
+
+No major application defect was identified while preparing the Milestone 12 evaluation framework.
+The primary design consideration was determining how performance should be measured.
+A Django test-client approach was selected because it provides repeatable measurements of server-side application response time.
+However, this method does not capture full browser rendering or production network latency.
+This limitation was therefore explicitly included in the performance test documentation.
+A second consideration was ensuring that the small usability sample was not overstated.
+The evaluation was defined as formative and limited to identifying usability issues and collecting preliminary evidence rather than claiming statistical generalisability.
+
+### Current Outcome
+
+Milestone 12 preparation has established:
+A repeatable performance measurement command
+A defined performance target
+A documented performance testing method
+A performance results template
+A usability test protocol
+Seven operational usability tasks
+Task success criteria
+Participant observation requirements
+A usability results template
+A standard SUS questionnaire approach
+A defined SUS scoring method
+Task success calculations
+Evaluation limitations
+Regression requirements following evaluation changes
+
+### Remaining Evidence Required Before Final Completion
+
+Milestone 12 should not be marked fully complete until actual evaluation evidence has been collected.
+The remaining work includes:
+Run the performance measurement command.
+Record the actual response-time results.
+Compare the measured pages against the 2-second target.
+Conduct the usability evaluation with 3 to 5 participants where approval permits.
+Record task completion results.
+Record task completion times.
+Record assistance and participant comments.
+Collect all SUS responses.
+Calculate individual SUS scores.
+Calculate the mean SUS score.
+Identify common usability problems.
+Record any resulting interface changes.
+Run the complete regression test suite after any changes.
+
+### Outcome
+
+Milestone 12 has moved the project from implementation-focused work into formal system evaluation.
+The technical framework for both performance and usability testing is prepared.
+Once actual measurements and participant results are recorded, the project will have evidence covering:
+Functional correctness
+Security behaviour
+Performance
+Usability
+The next engineering milestone is Milestone 13, which will focus on realistic demonstration data, final regression testing, minor interface cleanup and preparation of a stable final demonstration version.
