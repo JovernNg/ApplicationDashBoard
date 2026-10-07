@@ -38,6 +38,16 @@
     {% endif %}
 
 </div>
+{% if is_admin %}
+
+<a
+    href="{% url 'audit_log_list' %}?type=incident&amp;incident={{ incident.pk }}"
+    class="btn btn-outline-secondary"
+>
+    View Incident History
+</a>
+
+{% endif %}
 
 
 <div class="card">
@@ -146,6 +156,17 @@
     </div>
 
 </div>
+
+{% if is_admin %}
+
+<a
+    href="{% url 'audit_log_list' %}?type=application&amp;application={{ application.pk }}"
+    class="btn btn-outline-secondary"
+>
+    View Application History
+</a>
+
+{% endif %}
 
 
 <a

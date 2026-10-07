@@ -1,475 +1,599 @@
 {% extends "operations/base.html" %}
 
-
 {% block title %}
 Incidents
 {% endblock %}
 
-
 {% block content %}
 
-
-<div
-    class="d-flex justify-content-between
-           align-items-center mb-4"
->
-
-    <div>
-
-        <h1>
-            Incidents
-        </h1>
-
-        <p class="text-secondary mb-0">
-            Search and filter operational incidents.
-        </p>
-
-    </div>
-
-
-    <a
-        href="{% url 'incident_create' %}"
-        class="btn btn-primary"
-    >
-        Report Incident
-    </a>
-
-</div>
-
-
-<div class="card shadow-sm mb-4">
-
-    <div class="card-body">
-
-        <form
-            method="get"
-            action="{% url 'incident_list' %}"
-        >
-
-            <div class="row g-3">
-
-
-                <div class="col-lg-4">
-
-                    <label
-                        for="search"
-                        class="form-label"
-                    >
-                        Search
-                    </label>
-
-                    <input
-                        type="text"
-                        id="search"
-                        name="q"
-                        value="{{ query }}"
-                        class="form-control"
-                        placeholder="Incident number, title or description"
-                    >
-
-                </div>
-
-
-                <div class="col-md-6 col-lg-2">
-
-                    <label
-                        for="application"
-                        class="form-label"
-                    >
-                        Application
-                    </label>
-
-                    <select
-                        id="application"
-                        name="application"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            All Applications
-                        </option>
-
-                        {% for application in applications %}
-
-                        <option
-                            value="{{ application.pk }}"
-                            {% if application_filter == application.pk|stringformat:"s" %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ application.name }}
-                        </option>
-
-                        {% endfor %}
-
-                    </select>
-
-                </div>
-
-
-                <div class="col-md-6 col-lg-2">
-
-                    <label
-                        for="priority"
-                        class="form-label"
-                    >
-                        Priority
-                    </label>
-
-                    <select
-                        id="priority"
-                        name="priority"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            All Priorities
-                        </option>
-
-                        {% for value, label in priority_choices %}
-
-                        <option
-                            value="{{ value }}"
-                            {% if priority_filter == value %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ label }}
-                        </option>
-
-                        {% endfor %}
-
-                    </select>
-
-                </div>
-
-
-                <div class="col-md-6 col-lg-2">
-
-                    <label
-                        for="status"
-                        class="form-label"
-                    >
-                        Status
-                    </label>
-
-                    <select
-                        id="status"
-                        name="status"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            All Statuses
-                        </option>
-
-                        {% for value, label in status_choices %}
-
-                        <option
-                            value="{{ value }}"
-                            {% if status_filter == value %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ label }}
-                        </option>
-
-                        {% endfor %}
-
-                    </select>
-
-                </div>
-
-
-                <div class="col-md-6 col-lg-2">
-
-                    <label
-                        for="assigned_user"
-                        class="form-label"
-                    >
-                        Assigned User
-                    </label>
-
-                    <select
-                        id="assigned_user"
-                        name="assigned_user"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            All Users
-                        </option>
-
-                        <option
-                            value="unassigned"
-                            {% if assigned_user_filter == "unassigned" %}
-                                selected
-                            {% endif %}
-                        >
-                            Unassigned
-                        </option>
-
-                        {% for user in assigned_users %}
-
-                        <option
-                            value="{{ user.pk }}"
-                            {% if assigned_user_filter == user.pk|stringformat:"s" %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ user.username }}
-                        </option>
-
-                        {% endfor %}
-
-                    </select>
-
-                </div>
-
-            </div>
-
-
-            <div class="mt-3">
-
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                >
-                    Apply Search / Filters
-                </button>
-
-
-                <a
-                    href="{% url 'incident_list' %}"
-                    class="btn btn-outline-secondary"
-                >
-                    Clear
-                </a>
-
-            </div>
-
-        </form>
-
-    </div>
-
-</div>
-
-
-<div
-    class="d-flex justify-content-between
-           align-items-center mb-2"
->
-
-    <h2 class="h5 mb-0">
-        Incident Results
-    </h2>
-
-    <span class="text-secondary">
-        {{ result_count }}
-        result{{ result_count|pluralize }}
-    </span>
-
-</div>
-
-
-<div class="card shadow-sm">
-
-    <div class="card-body">
-
-        <div class="table-responsive">
-
-            <table
-                class="table table-hover
-                       align-middle mb-0"
+<div class="container-fluid py-4">
+
+    <!-- =========================================================
+         PAGE HEADER
+         ========================================================= -->
+    <div class="d-flex flex-column flex-lg-row
+                justify-content-between align-items-lg-center
+                gap-3 mb-4">
+
+        <div>
+            <h1 class="mb-1">Incidents</h1>
+
+            <p class="text-muted mb-0">
+                Search, filter and manage operational incidents.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            {% if is_admin %}
+            <a
+                href="{% url 'audit_log_list' %}?type=incident"
+                class="btn btn-outline-secondary"
             >
+                Incident Audit Log
+            </a>
+            {% endif %}
 
-                <thead>
+            <a
+                href="{% url 'incident_create' %}"
+                class="btn btn-primary"
+            >
+                Report Incident
+            </a>
 
-                    <tr>
+        </div>
 
-                        <th>
-                            Incident
-                        </th>
+    </div>
 
-                        <th>
+
+    <!-- =========================================================
+         SEARCH / FILTER PANEL
+         ========================================================= -->
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-body p-4">
+
+            <form method="get">
+
+                <div class="row g-3 align-items-end">
+
+                    <!-- Search -->
+                    <div class="col-12 col-lg-4">
+
+                        <label
+                            for="q"
+                            class="form-label fw-semibold"
+                        >
+                            Search
+                        </label>
+
+                        <input
+                            type="text"
+                            id="q"
+                            name="q"
+                            class="form-control"
+                            value="{{ query }}"
+                            placeholder="Incident number, title or description"
+                        >
+
+                    </div>
+
+
+                    <!-- Application -->
+                    <div class="col-12 col-sm-6 col-lg-2">
+
+                        <label
+                            for="application"
+                            class="form-label fw-semibold"
+                        >
                             Application
-                        </th>
+                        </label>
 
-                        <th>
-                            Title
-                        </th>
+                        <select
+                            id="application"
+                            name="application"
+                            class="form-select"
+                        >
 
-                        <th>
+                            <option value="">
+                                All Applications
+                            </option>
+
+                            {% for application in applications %}
+
+                            <option
+                                value="{{ application.id }}"
+                                {% if application_filter == application.id|stringformat:"s" %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ application.name }}
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Priority -->
+                    <div class="col-12 col-sm-6 col-lg-2">
+
+                        <label
+                            for="priority"
+                            class="form-label fw-semibold"
+                        >
                             Priority
-                        </th>
+                        </label>
 
-                        <th>
+                        <select
+                            id="priority"
+                            name="priority"
+                            class="form-select"
+                        >
+
+                            <option value="">
+                                All Priorities
+                            </option>
+
+                            {% for value, label in priority_choices %}
+
+                            <option
+                                value="{{ value }}"
+                                {% if priority_filter == value %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ label }}
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Status -->
+                    <div class="col-12 col-sm-6 col-lg-2">
+
+                        <label
+                            for="status"
+                            class="form-label fw-semibold"
+                        >
                             Status
-                        </th>
+                        </label>
 
-                        <th>
-                            Assigned To
-                        </th>
+                        <select
+                            id="status"
+                            name="status"
+                            class="form-select"
+                        >
 
-                        <th>
-                            SLA
-                        </th>
+                            <option value="">
+                                All Statuses
+                            </option>
 
-                        <th>
-                            SLA Deadline
-                        </th>
+                            {% for value, label in status_choices %}
 
-                        <th>
-                            Reported
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                    {% for incident in incidents %}
-
-                    <tr>
-
-                        <td>
-
-                            <a
-                                href="{% url 'incident_detail' incident.pk %}"
+                            <option
+                                value="{{ value }}"
+                                {% if status_filter == value %}
+                                    selected
+                                {% endif %}
                             >
-                                {{ incident.incident_number }}
-                            </a>
+                                {{ label }}
+                            </option>
 
-                        </td>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
 
 
-                        <td>
+                    <!-- Assigned User -->
+                    <div class="col-12 col-sm-6 col-lg-2">
 
-                            <a
-                                href="{% url 'application_detail' incident.application.pk %}"
+                        <label
+                            for="assigned_user"
+                            class="form-label fw-semibold"
+                        >
+                            Assigned User
+                        </label>
+
+                        <select
+                            id="assigned_user"
+                            name="assigned_user"
+                            class="form-select"
+                        >
+
+                            <option value="">
+                                All Users
+                            </option>
+
+                            <option
+                                value="unassigned"
+                                {% if assigned_user_filter == "unassigned" %}
+                                    selected
+                                {% endif %}
                             >
-                                {{ incident.application.name }}
-                            </a>
+                                Unassigned
+                            </option>
 
-                        </td>
+                            {% for assigned_user in assigned_users %}
 
+                            <option
+                                value="{{ assigned_user.id }}"
+                                {% if assigned_user_filter == assigned_user.id|stringformat:"s" %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ assigned_user.username }}
+                            </option>
 
-                        <td>
-                            {{ incident.title }}
-                        </td>
+                            {% endfor %}
 
+                        </select>
 
-                        <td>
+                    </div>
 
-                            {% if incident.priority == "CRITICAL" %}
-
-                            <span class="badge text-bg-danger">
-                                Critical
-                            </span>
-
-                            {% elif incident.priority == "HIGH" %}
-
-                            <span class="badge text-bg-warning">
-                                High
-                            </span>
-
-                            {% elif incident.priority == "MEDIUM" %}
-
-                            <span class="badge text-bg-primary">
-                                Medium
-                            </span>
-
-                            {% else %}
-
-                            <span class="badge text-bg-secondary">
-                                Low
-                            </span>
-
-                            {% endif %}
-
-                        </td>
+                </div>
 
 
-                        <td>
-                            {{ incident.get_status_display }}
-                        </td>
+                <!-- Filter buttons -->
+                <div class="d-flex flex-wrap gap-2 mt-4">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Apply Search / Filters
+                    </button>
+
+                    <a
+                        href="{% url 'incident_list' %}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Clear
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
 
 
-                        <td>
+    <!-- =========================================================
+         RESULTS HEADER
+         ========================================================= -->
+    <div class="d-flex flex-column flex-sm-row
+                justify-content-between align-items-sm-center
+                gap-2 mb-3">
 
-                            {% if incident.assigned_user %}
+        <h2 class="h5 mb-0">
+            Incident Results
+        </h2>
 
-                                {{ incident.assigned_user.username }}
+        <span class="text-muted">
+            {{ result_count }}
+            result{{ result_count|pluralize }}
+        </span>
 
-                            {% else %}
+    </div>
 
-                                <span class="text-secondary">
-                                    Unassigned
+
+    <!-- =========================================================
+         INCIDENT TABLE
+         ========================================================= -->
+    <div class="card shadow-sm border-0">
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th class="px-3 py-3">
+                                Incident
+                            </th>
+
+                            <th class="py-3">
+                                Application
+                            </th>
+
+                            <th class="py-3">
+                                Title
+                            </th>
+
+                            <th class="py-3">
+                                Priority
+                            </th>
+
+                            <th class="py-3">
+                                Status
+                            </th>
+
+                            <th class="py-3">
+                                Assigned User
+                            </th>
+
+                            <th class="py-3">
+                                SLA Status
+                            </th>
+
+                            <th class="py-3">
+                                SLA Deadline
+                            </th>
+
+                            <th class="pe-3 py-3">
+                                Reported
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for incident in incidents %}
+
+                        <tr>
+
+                            <!-- Incident Number -->
+                            <td class="px-3">
+
+                                <a
+                                    href="{% url 'incident_detail' incident.pk %}"
+                                    class="fw-semibold text-decoration-none"
+                                >
+                                    {{ incident.incident_number }}
+                                </a>
+
+                            </td>
+
+
+                            <!-- Application -->
+                            <td>
+
+                                {% if incident.application %}
+
+                                <a
+                                    href="{% url 'application_detail' incident.application.pk %}"
+                                    class="text-decoration-none"
+                                >
+                                    {{ incident.application.name }}
+                                </a>
+
+                                {% else %}
+
+                                <span class="text-muted">
+                                    -
                                 </span>
 
-                            {% endif %}
+                                {% endif %}
 
-                        </td>
-
-
-                        <td>
-
-                            {% if incident.sla_status_value == "BREACHED" %}
-
-                            <span class="badge text-bg-danger">
-                                {{ incident.sla_status_label }}
-                            </span>
-
-                            {% elif incident.sla_status_value == "AT_RISK" %}
-
-                            <span class="badge text-bg-warning">
-                                {{ incident.sla_status_label }}
-                            </span>
-
-                            {% else %}
-
-                            <span class="badge text-bg-success">
-                                {{ incident.sla_status_label }}
-                            </span>
-
-                            {% endif %}
-
-                        </td>
+                            </td>
 
 
-                        <td>
-                            {{ incident.sla_deadline_value|date:"d M Y H:i" }}
-                        </td>
+                            <!-- Title -->
+                            <td>
+
+                                <div
+                                    style="
+                                        min-width: 180px;
+                                        max-width: 300px;
+                                    "
+                                >
+                                    {{ incident.title }}
+                                </div>
+
+                            </td>
 
 
-                        <td>
-                            {{ incident.reported_at|date:"d M Y H:i" }}
-                        </td>
+                            <!-- Priority -->
+                            <td>
 
-                    </tr>
+                                {% if incident.priority == "CRITICAL" %}
+
+                                    <span class="badge text-bg-danger">
+                                        {{ incident.get_priority_display }}
+                                    </span>
+
+                                {% elif incident.priority == "HIGH" %}
+
+                                    <span class="badge text-bg-warning">
+                                        {{ incident.get_priority_display }}
+                                    </span>
+
+                                {% elif incident.priority == "MEDIUM" %}
+
+                                    <span class="badge text-bg-primary">
+                                        {{ incident.get_priority_display }}
+                                    </span>
+
+                                {% elif incident.priority == "LOW" %}
+
+                                    <span class="badge text-bg-secondary">
+                                        {{ incident.get_priority_display }}
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-secondary">
+                                        {{ incident.get_priority_display }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
 
 
-                    {% empty %}
+                            <!-- Incident Status -->
+                            <td>
 
-                    <tr>
+                                {% if incident.status == "NEW" %}
 
-                        <td
-                            colspan="9"
-                            class="text-center
-                                   text-secondary py-4"
-                        >
-                            No incidents match the current search or filters.
-                        </td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ incident.get_status_display }}
+                                    </span>
 
-                    </tr>
+                                {% elif incident.status == "ASSIGNED" %}
 
-                    {% endfor %}
+                                    <span class="badge text-bg-info">
+                                        {{ incident.get_status_display }}
+                                    </span>
 
-                </tbody>
+                                {% elif incident.status == "IN_PROGRESS" %}
 
-            </table>
+                                    <span class="badge text-bg-primary">
+                                        {{ incident.get_status_display }}
+                                    </span>
+
+                                {% elif incident.status == "RESOLVED" %}
+
+                                    <span class="badge text-bg-success">
+                                        {{ incident.get_status_display }}
+                                    </span>
+
+                                {% elif incident.status == "CLOSED" %}
+
+                                    <span class="badge text-bg-secondary">
+                                        {{ incident.get_status_display }}
+                                    </span>
+
+                                {% else %}
+
+                                    {{ incident.get_status_display }}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- Assigned User -->
+                            <td>
+
+                                {% if incident.assigned_user %}
+
+                                    {{ incident.assigned_user.username }}
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Unassigned
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- SLA Status -->
+                            <td>
+
+                                {% if incident.sla_status_value == "BREACHED" %}
+
+                                    <span class="badge text-bg-danger">
+                                        {{ incident.sla_status_label }}
+                                    </span>
+
+                                {% elif incident.sla_status_value == "AT_RISK" %}
+
+                                    <span class="badge text-bg-warning">
+                                        {{ incident.sla_status_label }}
+                                    </span>
+
+                                {% elif incident.sla_status_value == "WITHIN_SLA" %}
+
+                                    <span class="badge text-bg-success">
+                                        {{ incident.sla_status_label }}
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-secondary">
+                                        {{ incident.sla_status_label|default:"-" }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- SLA Deadline -->
+                            <td>
+
+                                {% if incident.sla_deadline_value %}
+
+                                    <span class="text-nowrap">
+                                        {{ incident.sla_deadline_value|date:"d M Y H:i" }}
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        -
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- Reported At -->
+                            <td class="pe-3">
+
+                                <span class="text-nowrap">
+                                    {{ incident.reported_at|date:"d M Y H:i" }}
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td
+                                colspan="9"
+                                class="text-center py-5"
+                            >
+
+                                <div class="text-muted">
+
+                                    <div class="fw-semibold mb-1">
+                                        No incidents found
+                                    </div>
+
+                                    <div>
+                                        Try changing or clearing the current filters.
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
 
         </div>
 
@@ -477,5 +601,55 @@ Incidents
 
 </div>
 
+
+<style>
+
+    /*
+     * Incident list page presentation.
+     *
+     * Everything remains in normal Bootstrap document flow.
+     * No absolute positioning or fixed horizontal offsets are used.
+     */
+
+    .card {
+        border-radius: 0.75rem;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 42px;
+    }
+
+    .table {
+        min-width: 1150px;
+    }
+
+    .table th {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .btn {
+        white-space: nowrap;
+    }
+
+    @media (max-width: 991.98px) {
+
+        .container-fluid {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+    }
+
+</style>
 
 {% endblock %}

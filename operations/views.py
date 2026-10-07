@@ -460,25 +460,98 @@ def application_edit(
 @administrator_required
 def audit_log_list(request):
 
-    audit_logs = (
+    log_type = request.GET.get(
+        "type",
+        "all"
+    )
+
+    if log_type not in [
+        "application",
+        "incident",
+        "all",
+    ]:
+        log_type = "all"
+
+    logs = (
         AuditLog.objects
         .select_related(
             "user",
             "application",
+            "incident",
         )
         .all()
     )
 
+    if log_type == "application":
+
+        logs = logs.filter(
+            action__startswith="APPLICATION_"
+        )
+
+        application_id = request.GET.get(
+            "application",
+            ""
+        )
+
+        if application_id:
+
+            if application_id.isdigit():
+
+                logs = logs.filter(
+                    application_id=int(
+                        application_id
+                    )
+                )
+
+            else:
+
+                logs = logs.none()
+
+    elif log_type == "incident":
+
+        logs = logs.filter(
+            action__startswith="INCIDENT_"
+        )
+
+        incident_id = request.GET.get(
+            "incident",
+            ""
+        )
+
+        if incident_id:
+
+            if incident_id.isdigit():
+
+                logs = logs.filter(
+                    incident_id=int(
+                        incident_id
+                    )
+                )
+
+            else:
+
+                logs = logs.none()
+
+    logs = logs.order_by(
+        "-created_at",
+        "-id",
+    )
+
+    context = {
+        "logs": logs,
+        "log_type": log_type,
+    }
+
     return render(
         request,
         "operations/audit_log_list.html",
-        {
-            "audit_logs": audit_logs,
-        },
+        context,
     )
 
 @login_required
 def incident_list(request):
+
+    
 
     incidents = (
         Incident.objects
@@ -670,6 +743,9 @@ def incident_list(request):
 
         "assigned_users":
             assigned_users,
+
+        "is_admin": 
+            is_administrator(request.user),
 
         "query":
             query,

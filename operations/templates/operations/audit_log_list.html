@@ -1,23 +1,67 @@
 {% extends "operations/base.html" %}
 
-
 {% block title %}
 Audit Log
 {% endblock %}
-
 
 {% block content %}
 
 <div class="mb-4">
 
-    <h1>
-        Audit Log
-    </h1>
+    {% if log_type == "application" %}
 
-    <p class="text-secondary">
-        Recorded application management
-        activity.
-    </p>
+        <h1>Application Audit Log</h1>
+
+        <p class="text-secondary">
+            History of application creation,
+            modifications and status changes.
+        </p>
+
+    {% elif log_type == "incident" %}
+
+        <h1>Incident Audit Log</h1>
+
+        <p class="text-secondary">
+            History of incident creation,
+            assignments, workflow changes
+            and operational updates.
+        </p>
+
+    {% else %}
+
+        <h1>Complete Audit Log</h1>
+
+        <p class="text-secondary">
+            All recorded operational audit events.
+        </p>
+
+    {% endif %}
+
+</div>
+
+
+<div class="d-flex gap-2 mb-4">
+
+    <a
+        href="{% url 'audit_log_list' %}?type=application"
+        class="btn btn-outline-primary"
+    >
+        Application Logs
+    </a>
+
+    <a
+        href="{% url 'audit_log_list' %}?type=incident"
+        class="btn btn-outline-primary"
+    >
+        Incident Logs
+    </a>
+
+    <a
+        href="{% url 'audit_log_list' %}"
+        class="btn btn-outline-secondary"
+    >
+        All Logs
+    </a>
 
 </div>
 
@@ -28,47 +72,35 @@ Audit Log
 
         <div class="table-responsive">
 
-            <table
-                class="table table-hover
-                       align-middle"
-            >
+            <table class="table table-hover align-middle">
 
                 <thead>
 
                     <tr>
 
-                        <th>
-                            Date / Time
-                        </th>
+                        <th>Date / Time</th>
 
-                        <th>
-                            User
-                        </th>
+                        <th>User</th>
 
-                        <th>
-                            Action
-                        </th>
+                        <th>Action</th>
 
-                        <th>
-                            Application
-                        </th>
+                        {% if log_type != "incident" %}
+                            <th>Application</th>
+                        {% endif %}
 
-                        <th>
-                            Incident
-                        </th>
+                        {% if log_type != "application" %}
+                            <th>Incident</th>
+                        {% endif %}
 
-                        <th>
-                            Details
-                        </th>
+                        <th>Details</th>
 
                     </tr>
 
                 </thead>
 
-
                 <tbody>
 
-                {% for log in audit_logs %}
+                    {% for log in logs %}
 
                     <tr>
 
@@ -79,13 +111,9 @@ Audit Log
                         <td>
 
                             {% if log.user %}
-
                                 {{ log.user.username }}
-
                             {% else %}
-
-                                System
-
+                                Unknown User
                             {% endif %}
 
                         </td>
@@ -94,63 +122,64 @@ Audit Log
                             {{ log.get_action_display }}
                         </td>
 
+                        {% if log_type != "incident" %}
+
+                            <td>
+
+                                {% if log.application %}
+
+                                    <a href="{% url 'application_detail' log.application.pk %}">
+                                        {{ log.application.name }}
+                                    </a>
+
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                            </td>
+
+                        {% endif %}
+
+
+                        {% if log_type != "application" %}
+
+                            <td>
+
+                                {% if log.incident %}
+
+                                    <a href="{% url 'incident_detail' log.incident.pk %}">
+                                        {{ log.incident.incident_number }}
+                                    </a>
+
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                            </td>
+
+                        {% endif %}
+
+
                         <td>
-
-                            {% if log.application %}
-
-                                <a
-                                    href="{% url 'application_detail' log.application.pk %}"
-                                >
-                                    {{ log.application.name }}
-                                </a>
-
-                            {% else %}
-
-                                -
-
-                            {% endif %}
-
-                        </td>
-
-                        <td>
-
-                            {% if log.incident %}
-
-                                <a
-                                    href="{% url 'incident_detail' log.incident.pk %}"
-                                >
-                                    {{ log.incident.incident_number }}
-                                </a>
-
-                            {% else %}
-
-                                -
-
-                            {% endif %}
-
-                        </td>
-
-                        <td>
-                            {{ log.details }}
+                            {{ log.details|linebreaksbr }}
                         </td>
 
                     </tr>
 
-                {% empty %}
+                    {% empty %}
 
                     <tr>
 
                         <td
                             colspan="6"
-                            class="text-center text-secondary"
+                            class="text-center text-secondary py-4"
                         >
-                            No audit records
-                            have been created.
+                            No audit records found.
                         </td>
 
                     </tr>
 
-                {% endfor %}
+                    {% endfor %}
 
                 </tbody>
 
